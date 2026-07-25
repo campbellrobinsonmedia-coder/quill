@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum WritingMode {
+  PROSE
+  SCREENPLAY
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  projects Project[]
+  ideas    Idea[]
+}
+
+model Project {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title          String
+  formatTemplate String
+  writingMode    WritingMode
+  logline        String?
+  status         ProjectStatus @default(ACTIVE)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  ideas         Idea[]
+  characters    Character[]
+  outlineCards  OutlineCard[]
+  draft         Draft?
+}
+
+model Idea {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([projectId])
+}
+
+model Character {
+  id            String   @id @default(cuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name          String
+  description   String?
+  arcNotes      String?
+  relationships String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([projectId])
+}
+
+model OutlineCard {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title     String
+  summary   String?
+  colorTag  String?
+  act       String?
+  order     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+}
+
+model Draft {
+  id        String   @id @default(cuid())
+  projectId String   @unique
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  content   Json
+  wordCount Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  versions DraftVersion[]
+}
+
+model DraftVersion {
+  id        String   @id @default(cuid())
+  draftId   String
+  draft     Draft    @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  content   Json
+  wordCount Int      @default(0)
+  label     String?
+  createdAt DateTime @default(now())
+
+  @@index([draftId])
+}
