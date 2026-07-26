@@ -52,10 +52,14 @@ export function OutlineCard({ card }: { card: OutlineCardData }) {
         <div
           {...attributes}
           {...listeners}
-          className="mt-1 h-3 w-3 shrink-0 cursor-grab rounded-full active:cursor-grabbing"
-          style={{ backgroundColor: swatchFor(colorTag) }}
+          className="flex shrink-0 touch-none select-none items-center justify-center rounded p-1.5 cursor-grab active:cursor-grabbing hover:bg-neutral-100 dark:hover:bg-neutral-800"
           title="Drag to reorder"
-        />
+        >
+          <div
+            className="h-3 w-3 rounded-full"
+            style={{ backgroundColor: swatchFor(colorTag) }}
+          />
+        </div>
         {!editing ? (
           <button
             onClick={() => setEditing(true)}

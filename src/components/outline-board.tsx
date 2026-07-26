@@ -36,14 +36,12 @@ export function OutlineBoard({
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    setCards((prev) => {
-      const oldIndex = prev.findIndex((c) => c.id === active.id);
-      const newIndex = prev.findIndex((c) => c.id === over.id);
-      const next = arrayMove(prev, oldIndex, newIndex);
-      startTransition(async () => {
-        await reorderCards(projectId, next.map((c) => c.id));
-      });
-      return next;
+    const oldIndex = cards.findIndex((c) => c.id === active.id);
+    const newIndex = cards.findIndex((c) => c.id === over.id);
+    const next = arrayMove(cards, oldIndex, newIndex);
+    setCards(next);
+    startTransition(async () => {
+      await reorderCards(projectId, next.map((c) => c.id));
     });
   }
 
@@ -81,6 +79,7 @@ export function OutlineBoard({
         </p>
       ) : (
         <DndContext
+          id={`outline-board-${projectId}`}
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
