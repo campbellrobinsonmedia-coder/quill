@@ -18,10 +18,12 @@ export function WriteEditor({
   projectId,
   initialContent,
   initialVersions,
+  characterNames = [],
 }: {
   projectId: string;
   initialContent: DraftContent;
   initialVersions: VersionSummary[];
+  characterNames?: string[];
 }) {
   const [content, setContent] = useState(initialContent);
   const [saveState, setSaveState] = useState<"saved" | "saving" | "pending">("saved");
@@ -84,6 +86,22 @@ export function WriteEditor({
               </span>
             </div>
             <div className="flex gap-4">
+              {content.type === "screenplay" && (
+                <>
+                  <a
+                    href={`/api/projects/${projectId}/export/pdf`}
+                    className="hover:text-neutral-900 dark:hover:text-neutral-100"
+                  >
+                    Export PDF
+                  </a>
+                  <a
+                    href={`/api/projects/${projectId}/export/fountain`}
+                    className="hover:text-neutral-900 dark:hover:text-neutral-100"
+                  >
+                    Export Fountain
+                  </a>
+                </>
+              )}
               <button onClick={() => setShowHistory((v) => !v)} className="hover:text-neutral-900 dark:hover:text-neutral-100">
                 History
               </button>
@@ -113,6 +131,7 @@ export function WriteEditor({
             <ScreenplayEditor
               content={content}
               onChange={(next) => setContent(next)}
+              characterNames={characterNames}
             />
           )}
         </div>

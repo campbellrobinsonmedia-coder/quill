@@ -36,9 +36,11 @@ const PAGE_WIDTH_PX = 816;
 export function ScreenplayEditor({
   content,
   onChange,
+  characterNames = [],
 }: {
   content: ScreenplayContent;
   onChange: (content: ScreenplayContent) => void;
+  characterNames?: string[];
 }) {
   const elements = content.elements;
   const refs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
@@ -47,6 +49,7 @@ export function ScreenplayEditor({
   const pageRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [pageHeight, setPageHeight] = useState<number>();
+  const [focusedId, setFocusedId] = useState<string | null>(null);
 
   useEffect(() => {
     if (pendingFocus.current) {
@@ -94,6 +97,25 @@ export function ScreenplayEditor({
     const next = elements.slice();
     next[index] = { ...el, text: value };
     setElements(next);
+  }
+
+  function characterSuggestions(text: string): string[] {
+    const query = text.trim().toUpperCase();
+    if (!query) return [];
+    return characterNames
+      .filter((name) => {
+        const upper = name.toUpperCase();
+        return upper.startsWith(query) && upper !== query;
+      })
+      .slice(0, 5);
+  }
+
+  function pickSuggestion(index: number, name: string) {
+    const el = elements[index];
+    const next = elements.slice();
+    next[index] = { ...el, text: name.toUpperCase() };
+    setElements(next);
+    setFocusedId(null);
   }
 
   function setType(index: number, type: ScreenplayElementType) {
@@ -163,23 +185,51 @@ export function ScreenplayEditor({
             fontSize: "12pt",
           }}
         >
-          {elements.map((el, index) => (
-            <div key={el.id} className="group relative">
-              <textarea
-                ref={(node) => {
-                  if (node) refs.current.set(el.id, node);
-                  else refs.current.delete(el.id);
-                }}
-                value={el.text}
-                onChange={(e) => updateElement(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(index, e)}
-                onInput={(e) => resize(e.currentTarget)}
-                rows={1}
-                placeholder={ELEMENT_LABELS[el.type]}
-                className={`block w-full resize-none overflow-hidden bg-transparent leading-relaxed outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 ${TYPE_STYLES[el.type]}`}
-              />
-            </div>
-          ))}
+          {elements.map((el, index) => {
+            const suggestions =
+              el.type === "character" && focusedId === el.id
+                ? characterSuggestions(el.text)
+                : [];
+            return (
+              <div key={el.id} className="group relative">
+                <textarea
+                  ref={(node) => {
+                    if (node) refs.current.set(el.id, node);
+                    else refs.current.delete(el.id);
+                  }}
+                  value={el.text}
+                  onChange={(e) => updateElement(index, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(index, e)}
+                  onInput={(e) => resize(e.currentTarget)}
+                  onFocus={() => setFocusedId(el.id)}
+                  onBlur={() => setFocusedId((cur) => (cur === el.id ? null : cur))}
+                  rows={1}
+                  placeholder={ELEMENT_LABELS[el.type]}
+                  className={`block w-full resize-none overflow-hidden bg-transparent leading-relaxed outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 ${TYPE_STYLES[el.type]}`}
+                />
+                {suggestions.length > 0 && (
+                  <div
+                    className="absolute left-[2.2in] z-10 mt-0.5 min-w-[2in] rounded border border-neutral-200 bg-white text-xs shadow-md dark:border-neutral-700 dark:bg-neutral-900"
+                    style={{ fontFamily: "system-ui, sans-serif" }}
+                  >
+                    {suggestions.map((name) => (
+                      <button
+                        key={name}
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          pickSuggestion(index, name);
+                        }}
+                        className="block w-full px-2 py-1 text-left hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

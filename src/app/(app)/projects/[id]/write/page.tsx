@@ -21,17 +21,25 @@ export default async function WritePage({
     });
   }
 
-  const versions = await prisma.draftVersion.findMany({
-    where: { draftId: draft.id },
-    orderBy: { createdAt: "desc" },
-    select: { id: true, wordCount: true, label: true, createdAt: true },
-  });
+  const [versions, characters] = await Promise.all([
+    prisma.draftVersion.findMany({
+      where: { draftId: draft.id },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, wordCount: true, label: true, createdAt: true },
+    }),
+    prisma.character.findMany({
+      where: { projectId: id },
+      orderBy: { name: "asc" },
+      select: { name: true },
+    }),
+  ]);
 
   return (
     <WriteEditor
       projectId={id}
       initialContent={draft.content as unknown as DraftContent}
       initialVersions={versions}
+      characterNames={characters.map((c) => c.name)}
     />
   );
 }

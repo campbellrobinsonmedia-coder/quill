@@ -9,6 +9,7 @@ export function ProjectTabNav({ projectId }: { projectId: string }) {
   const tabs = [
     { href: base, label: "Outline" },
     { href: `${base}/characters`, label: "Characters" },
+    { href: `${base}/world`, label: "World" },
     { href: `${base}/ideas`, label: "Ideas" },
     { href: `${base}/write`, label: "Write" },
   ];
