@@ -10,6 +10,15 @@ export type ScreenplayElement = {
   id: string;
   type: ScreenplayElementType;
   text: string;
+  // scene_heading only: explicit number once the draft's scene numbers are
+  // locked. Undefined/null means "auto-number sequentially" (unlocked).
+  sceneNumber?: string | null;
+  // scene_heading only: scene is marked OMITTED but keeps its number
+  // reserved, rather than being deleted outright.
+  omitted?: boolean;
+  // character/parenthetical/dialogue: elements sharing a dualGroup id are
+  // simultaneous dialogue, rendered side-by-side.
+  dualGroup?: string | null;
 };
 
 export type ProseContent = {
@@ -134,6 +143,64 @@ export function nextEnterType(current: ScreenplayElementType): ScreenplayElement
     case "transition":
       return "scene_heading";
   }
+}
+
+// Auto-numbers scenes 1,2,3... when unlocked. Once locked, existing scene
+// headings keep their persisted sceneNumber, and any scene inserted after
+// locking gets a letter suffix off the nearest preceding locked number
+// (24, 24A, 24B, 25...) instead of renumbering everything.
+export function computeSceneNumbers(
+  elements: ScreenplayElement[],
+  locked: boolean
+): Map<string, string> {
+  const numbers = new Map<string, string>();
+  const headings = elements.filter((el) => el.type === "scene_heading");
+
+  if (!locked) {
+    headings.forEach((el, i) => numbers.set(el.id, String(i + 1)));
+    return numbers;
+  }
+
+  let lastLocked = "0";
+  let suffixCount = 0;
+  for (const el of headings) {
+    if (el.sceneNumber) {
+      numbers.set(el.id, el.sceneNumber);
+      lastLocked = el.sceneNumber;
+      suffixCount = 0;
+    } else {
+      suffixCount += 1;
+      const suffix = String.fromCharCode(64 + suffixCount); // A, B, C...
+      numbers.set(el.id, `${lastLocked}${suffix}`);
+    }
+  }
+  return numbers;
+}
+
+export type Scene = {
+  heading: ScreenplayElement | null;
+  body: ScreenplayElement[];
+};
+
+// Groups a flat element list into scenes (heading + everything until the
+// next scene_heading). Elements before the first heading, if any, form a
+// headerless preamble scene.
+export function groupScenes(elements: ScreenplayElement[]): Scene[] {
+  const scenes: Scene[] = [];
+  let current: Scene | null = null;
+  for (const el of elements) {
+    if (el.type === "scene_heading") {
+      current = { heading: el, body: [] };
+      scenes.push(current);
+    } else {
+      if (!current) {
+        current = { heading: null, body: [] };
+        scenes.push(current);
+      }
+      current.body.push(el);
+    }
+  }
+  return scenes;
 }
 
 export const ELEMENT_LABELS: Record<ScreenplayElementType, string> = {

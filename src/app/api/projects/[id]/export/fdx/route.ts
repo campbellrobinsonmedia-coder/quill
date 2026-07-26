@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { toFountain } from "@/lib/fountain";
+import { toFDX } from "@/lib/fdx";
 import type { DraftContent } from "@/lib/draft-content";
 
 export async function GET(
@@ -26,29 +26,17 @@ export async function GET(
   const content = project.draft.content as unknown as DraftContent;
   if (content.type !== "screenplay") {
     return NextResponse.json(
-      { error: "Fountain export is only available for screenplay projects" },
+      { error: "FDX export is only available for screenplay projects" },
       { status: 400 }
     );
   }
 
-  const comments = await prisma.draftComment.findMany({
-    where: { draftId: project.draft.id, resolved: false },
-    select: { elementId: true, text: true },
-  });
+  const fdx = toFDX(content, project.title);
+  const filename = `${project.title.replace(/[^\w\- ]+/g, "").trim() || "screenplay"}.fdx`;
 
-  const fountain = toFountain(content, {
-    title: project.title,
-    author: project.titlePageAuthor,
-    contact: project.titlePageContact,
-    basedOn: project.titlePageBasedOn,
-    sceneNumbersLocked: project.draft.sceneNumbersLocked,
-    comments,
-  });
-  const filename = `${project.title.replace(/[^\w\- ]+/g, "").trim() || "screenplay"}.fountain`;
-
-  return new NextResponse(fountain, {
+  return new NextResponse(fdx, {
     headers: {
-      "Content-Type": "text/plain; charset=utf-8",
+      "Content-Type": "application/xml; charset=utf-8",
       "Content-Disposition": `attachment; filename="${filename}"`,
     },
   });

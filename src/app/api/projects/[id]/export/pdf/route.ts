@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { renderScreenplayPdf } from "@/lib/screenplay-pdf";
-import type { DraftContent } from "@/lib/draft-content";
+import type { DraftContent, ScreenplayContent } from "@/lib/draft-content";
 
 function bufferFromDoc(doc: PDFKit.PDFDocument): Promise<Buffer> {
   return new Promise((resolve, reject) => {
@@ -15,7 +15,7 @@ function bufferFromDoc(doc: PDFKit.PDFDocument): Promise<Buffer> {
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
@@ -41,7 +41,31 @@ export async function GET(
     );
   }
 
-  const doc = renderScreenplayPdf(content, project.title);
+  let revisionBaseline: ScreenplayContent | null = null;
+  let revisionColor: string | null = null;
+  if (project.draft.lastLockedVersionId) {
+    const version = await prisma.draftVersion.findUnique({
+      where: { id: project.draft.lastLockedVersionId },
+      select: { content: true, revisionColor: true },
+    });
+    if (version) {
+      revisionBaseline = version.content as unknown as ScreenplayContent;
+      revisionColor = version.revisionColor;
+    }
+  }
+
+  const watermark = new URL(request.url).searchParams.get("watermark");
+
+  const doc = renderScreenplayPdf(content, {
+    title: project.title,
+    author: project.titlePageAuthor,
+    contact: project.titlePageContact,
+    basedOn: project.titlePageBasedOn,
+    revisionColor,
+    revisionBaseline,
+    sceneNumbersLocked: project.draft.sceneNumbersLocked,
+    watermark: watermark || null,
+  });
   const buffer = await bufferFromDoc(doc);
   const filename = `${project.title.replace(/[^\w\- ]+/g, "").trim() || "screenplay"}.pdf`;
 

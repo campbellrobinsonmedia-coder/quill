@@ -12,6 +12,8 @@ export function ProjectTabNav({ projectId }: { projectId: string }) {
     { href: `${base}/world`, label: "World" },
     { href: `${base}/ideas`, label: "Ideas" },
     { href: `${base}/write`, label: "Write" },
+    { href: `${base}/reports`, label: "Reports" },
+    { href: `${base}/settings`, label: "Settings" },
   ];
 
   return (

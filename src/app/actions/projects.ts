@@ -66,7 +66,13 @@ export async function setProjectStatus(
 
 export async function updateProjectMeta(
   projectId: string,
-  data: { title?: string; logline?: string }
+  data: {
+    title?: string;
+    logline?: string;
+    titlePageAuthor?: string | null;
+    titlePageContact?: string | null;
+    titlePageBasedOn?: string | null;
+  }
 ) {
   const userId = await requireUserId();
   await prisma.project.updateMany({
@@ -74,6 +80,8 @@ export async function updateProjectMeta(
     data,
   });
   revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/write`);
+  revalidatePath(`/projects/${projectId}/settings`);
 }
 
 export async function getOwnedProject(projectId: string) {

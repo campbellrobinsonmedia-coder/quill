@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getProjectOrNotFound } from "@/lib/get-project";
-import { createEmptyContent, type DraftContent } from "@/lib/draft-content";
+import { createEmptyContent, type DraftContent, type ScreenplayContent } from "@/lib/draft-content";
 import { WriteEditor } from "@/components/editor/write-editor";
 
 export default async function WritePage({
@@ -21,7 +21,7 @@ export default async function WritePage({
     });
   }
 
-  const [versions, characters] = await Promise.all([
+  const [versions, characters, worldNotes, comments, lastLockedVersion] = await Promise.all([
     prisma.draftVersion.findMany({
       where: { draftId: draft.id },
       orderBy: { createdAt: "desc" },
@@ -32,6 +32,20 @@ export default async function WritePage({
       orderBy: { name: "asc" },
       select: { name: true },
     }),
+    prisma.worldNote.findMany({
+      where: { projectId: id },
+      select: { title: true },
+    }),
+    prisma.draftComment.findMany({
+      where: { draftId: draft.id },
+      select: { id: true, elementId: true, text: true, resolved: true },
+    }),
+    draft.lastLockedVersionId
+      ? prisma.draftVersion.findUnique({
+          where: { id: draft.lastLockedVersionId },
+          select: { content: true, revisionColor: true },
+        })
+      : null,
   ]);
 
   return (
@@ -40,6 +54,13 @@ export default async function WritePage({
       initialContent={draft.content as unknown as DraftContent}
       initialVersions={versions}
       characterNames={characters.map((c) => c.name)}
+      locationSuggestions={worldNotes.map((w) => w.title)}
+      initialSceneNumbersLocked={draft.sceneNumbersLocked}
+      initialRevisionBaseline={
+        lastLockedVersion ? (lastLockedVersion.content as unknown as ScreenplayContent) : null
+      }
+      initialRevisionColor={lastLockedVersion?.revisionColor ?? null}
+      initialComments={comments}
     />
   );
 }

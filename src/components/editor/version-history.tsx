@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { createVersionSnapshot, restoreVersion } from "@/app/actions/draft";
+import { createVersionSnapshot, restoreVersion, getVersionContent } from "@/app/actions/draft";
 import type { DraftContent } from "@/lib/draft-content";
+import { VersionCompare } from "@/components/editor/version-compare";
 
 export type VersionSummary = {
   id: string;
@@ -29,6 +30,7 @@ export function VersionHistory({
   const [label, setLabel] = useState("");
   const [isPending, startTransition] = useTransition();
   const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [compareContent, setCompareContent] = useState<DraftContent | null>(null);
 
   function saveSnapshot() {
     startTransition(async () => {
@@ -44,6 +46,13 @@ export function VersionHistory({
       const restored = await restoreVersion(projectId, versionId);
       onRestore(restored);
       setRestoringId(null);
+    });
+  }
+
+  function compare(versionId: string) {
+    startTransition(async () => {
+      const versionContent = await getVersionContent(projectId, versionId);
+      setCompareContent(versionContent);
     });
   }
 
@@ -80,16 +89,33 @@ export function VersionHistory({
             <p className="text-xs text-neutral-500">
               {new Date(v.createdAt).toLocaleString()} · {v.wordCount} words
             </p>
-            <button
-              onClick={() => restore(v.id)}
-              disabled={isPending}
-              className="mt-1 text-xs text-neutral-500 underline underline-offset-2 hover:text-neutral-900 disabled:opacity-60 dark:hover:text-neutral-100"
-            >
-              {restoringId === v.id ? "Restoring…" : "Restore"}
-            </button>
+            <div className="mt-1 flex gap-3">
+              <button
+                onClick={() => restore(v.id)}
+                disabled={isPending}
+                className="text-xs text-neutral-500 underline underline-offset-2 hover:text-neutral-900 disabled:opacity-60 dark:hover:text-neutral-100"
+              >
+                {restoringId === v.id ? "Restoring…" : "Restore"}
+              </button>
+              <button
+                onClick={() => compare(v.id)}
+                disabled={isPending}
+                className="text-xs text-neutral-500 underline underline-offset-2 hover:text-neutral-900 disabled:opacity-60 dark:hover:text-neutral-100"
+              >
+                Compare to current
+              </button>
+            </div>
           </li>
         ))}
       </ul>
+
+      {compareContent && (
+        <VersionCompare
+          before={compareContent}
+          after={content}
+          onClose={() => setCompareContent(null)}
+        />
+      )}
     </div>
   );
 }
