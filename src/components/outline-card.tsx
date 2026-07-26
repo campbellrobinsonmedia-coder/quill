@@ -12,16 +12,30 @@ export type OutlineCardData = {
   summary: string | null;
   colorTag: string | null;
   act: string | null;
+  location: string | null;
+  emotion: string | null;
+  characters: { id: string; name: string }[];
 };
 
-export function OutlineCard({ card }: { card: OutlineCardData }) {
+export function OutlineCard({
+  card,
+  availableCharacters,
+}: {
+  card: OutlineCardData;
+  availableCharacters: { id: string; name: string }[];
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: card.id });
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(card.title);
   const [summary, setSummary] = useState(card.summary ?? "");
   const [act, setAct] = useState(card.act ?? "");
+  const [location, setLocation] = useState(card.location ?? "");
+  const [emotion, setEmotion] = useState(card.emotion ?? "");
   const [colorTag, setColorTag] = useState(card.colorTag ?? "neutral");
+  const [characterIds, setCharacterIds] = useState(
+    new Set(card.characters.map((c) => c.id))
+  );
   const [isPending, startTransition] = useTransition();
 
   const style = {
@@ -30,13 +44,25 @@ export function OutlineCard({ card }: { card: OutlineCardData }) {
     opacity: isDragging ? 0.5 : 1,
   };
 
+  function toggleCharacter(id: string) {
+    setCharacterIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   function save() {
     startTransition(async () => {
       await updateCard(card.id, {
         title: title.trim() || "Untitled",
         summary,
         act: act || null,
+        location: location || null,
+        emotion: emotion || null,
         colorTag,
+        characterIds: Array.from(characterIds),
       });
       setEditing(false);
     });
@@ -80,11 +106,30 @@ export function OutlineCard({ card }: { card: OutlineCardData }) {
       </div>
 
       {!editing ? (
-        card.summary && (
-          <p className="whitespace-pre-wrap text-xs text-neutral-500 line-clamp-4">
-            {card.summary}
-          </p>
-        )
+        <>
+          {card.summary && (
+            <p className="whitespace-pre-wrap text-xs text-neutral-500 line-clamp-4">
+              {card.summary}
+            </p>
+          )}
+          {(card.location || card.emotion) && (
+            <p className="text-xs text-neutral-400">
+              {[card.location, card.emotion].filter(Boolean).join(" · ")}
+            </p>
+          )}
+          {card.characters.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {card.characters.map((c) => (
+                <span
+                  key={c.id}
+                  className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
+                >
+                  {c.name}
+                </span>
+              ))}
+            </div>
+          )}
+        </>
       ) : (
         <div className="space-y-2">
           <textarea
@@ -100,6 +145,48 @@ export function OutlineCard({ card }: { card: OutlineCardData }) {
             placeholder="Act / thread (e.g. Act 2)"
             className="w-full rounded border border-neutral-300 px-2 py-1 text-xs outline-none dark:border-neutral-700 dark:bg-neutral-900"
           />
+          <div className="flex gap-2">
+            <input
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="Location"
+              className="w-1/2 rounded border border-neutral-300 px-2 py-1 text-xs outline-none dark:border-neutral-700 dark:bg-neutral-900"
+            />
+            <input
+              value={emotion}
+              onChange={(e) => setEmotion(e.target.value)}
+              placeholder="Emotion"
+              className="w-1/2 rounded border border-neutral-300 px-2 py-1 text-xs outline-none dark:border-neutral-700 dark:bg-neutral-900"
+            />
+          </div>
+
+          {availableCharacters.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-neutral-500">
+                Characters in scene
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {availableCharacters.map((c) => {
+                  const selected = characterIds.has(c.id);
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => toggleCharacter(c.id)}
+                      className={`rounded-full border px-2 py-0.5 text-xs ${
+                        selected
+                          ? "border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900"
+                          : "border-neutral-300 text-neutral-600 dark:border-neutral-700 dark:text-neutral-400"
+                      }`}
+                    >
+                      {c.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-1.5">
             {OUTLINE_COLORS.map((c) => (
               <button

@@ -38,7 +38,15 @@ export async function createCard(projectId: string, title: string) {
 
 export async function updateCard(
   cardId: string,
-  data: { title?: string; summary?: string; colorTag?: string | null; act?: string | null }
+  data: {
+    title?: string;
+    summary?: string;
+    colorTag?: string | null;
+    act?: string | null;
+    location?: string | null;
+    emotion?: string | null;
+    characterIds?: string[];
+  }
 ) {
   const userId = await requireUserId();
   const card = await prisma.outlineCard.findFirst({
@@ -47,7 +55,24 @@ export async function updateCard(
   });
   if (!card || card.project.userId !== userId) throw new Error("Not found");
 
-  await prisma.outlineCard.update({ where: { id: cardId }, data });
+  const { characterIds, ...rest } = data;
+
+  if (characterIds) {
+    const owned = await prisma.character.findMany({
+      where: { id: { in: characterIds }, projectId: card.project.id },
+      select: { id: true },
+    });
+    await prisma.outlineCard.update({
+      where: { id: cardId },
+      data: {
+        ...rest,
+        characters: { set: owned.map((c) => ({ id: c.id })) },
+      },
+    });
+  } else {
+    await prisma.outlineCard.update({ where: { id: cardId }, data: rest });
+  }
+
   revalidatePath(`/projects/${card.project.id}`);
 }
 

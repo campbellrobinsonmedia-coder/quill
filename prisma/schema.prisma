@@ -73,6 +73,8 @@ model Character {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  outlineCards OutlineCard[]
+
   @@index([projectId])
 }
 
@@ -84,9 +86,13 @@ model OutlineCard {
   summary   String?
   colorTag  String?
   act       String?
+  location  String?
+  emotion   String?
   order     Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  characters Character[]
 
   @@index([projectId])
 }

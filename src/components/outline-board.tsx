@@ -20,9 +20,11 @@ import { createCard, reorderCards } from "@/app/actions/outline";
 export function OutlineBoard({
   projectId,
   initialCards,
+  availableCharacters,
 }: {
   projectId: string;
   initialCards: OutlineCardData[];
+  availableCharacters: { id: string; name: string }[];
 }) {
   const [cards, setCards] = useState(initialCards);
   useEffect(() => setCards(initialCards), [initialCards]);
@@ -87,7 +89,11 @@ export function OutlineBoard({
           <SortableContext items={cards.map((c) => c.id)} strategy={rectSortingStrategy}>
             <div className="flex flex-wrap gap-3">
               {cards.map((card) => (
-                <OutlineCard key={card.id} card={card} />
+                <OutlineCard
+                  key={card.id}
+                  card={card}
+                  availableCharacters={availableCharacters}
+                />
               ))}
             </div>
           </SortableContext>
