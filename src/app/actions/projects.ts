@@ -122,6 +122,20 @@ export async function setProjectStatus(
   revalidatePath("/dashboard");
 }
 
+export async function deleteProject(projectId: string) {
+  const userId = await requireUserId();
+  const project = await prisma.project.findFirst({
+    where: { id: projectId, userId },
+    select: { status: true, seasonId: true },
+  });
+  if (!project || project.status !== "ARCHIVED") {
+    throw new Error("Only archived projects can be deleted");
+  }
+
+  await prisma.project.delete({ where: { id: projectId } });
+  revalidatePath("/dashboard");
+}
+
 export async function updateProjectMeta(
   projectId: string,
   data: {

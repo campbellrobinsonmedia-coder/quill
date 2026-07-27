@@ -16,9 +16,6 @@ export default function AppLayout({
           <Link href="/dashboard" className="text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100">
             Projects
           </Link>
-          <Link href="/series" className="text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100">
-            Series
-          </Link>
           <Link href="/ideas" className="text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100">
             Ideas
           </Link>

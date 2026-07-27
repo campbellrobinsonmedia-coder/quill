@@ -51,6 +51,32 @@ export async function updateSeriesMeta(
   revalidatePath("/series");
 }
 
+export async function setSeriesStatus(
+  seriesId: string,
+  status: "ACTIVE" | "ARCHIVED"
+) {
+  const userId = await requireUserId();
+  await prisma.series.updateMany({
+    where: { id: seriesId, userId },
+    data: { status },
+  });
+  revalidatePath("/dashboard");
+}
+
+export async function deleteSeries(seriesId: string) {
+  const userId = await requireUserId();
+  const series = await prisma.series.findFirst({
+    where: { id: seriesId, userId },
+    select: { status: true },
+  });
+  if (!series || series.status !== "ARCHIVED") {
+    throw new Error("Only archived series can be deleted");
+  }
+
+  await prisma.series.delete({ where: { id: seriesId } });
+  revalidatePath("/dashboard");
+}
+
 export async function createSeason(seriesId: string, title?: string) {
   const userId = await requireUserId();
   const series = await prisma.series.findFirst({
