@@ -7,14 +7,19 @@ import { updateProjectMeta } from "@/app/actions/projects";
 export function ProjectSettingsForm({
   projectId,
   initial,
+  isEpisode = false,
 }: {
   projectId: string;
+  isEpisode?: boolean;
   initial: {
     title: string;
     logline: string | null;
     titlePageAuthor: string | null;
     titlePageContact: string | null;
     titlePageBasedOn: string | null;
+    episodeTitle?: string | null;
+    storyBy?: string | null;
+    teleplayBy?: string | null;
   };
 }) {
   const router = useRouter();
@@ -23,6 +28,9 @@ export function ProjectSettingsForm({
   const [author, setAuthor] = useState(initial.titlePageAuthor ?? "");
   const [contact, setContact] = useState(initial.titlePageContact ?? "");
   const [basedOn, setBasedOn] = useState(initial.titlePageBasedOn ?? "");
+  const [episodeTitle, setEpisodeTitle] = useState(initial.episodeTitle ?? "");
+  const [storyBy, setStoryBy] = useState(initial.storyBy ?? "");
+  const [teleplayBy, setTeleplayBy] = useState(initial.teleplayBy ?? "");
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
 
@@ -35,6 +43,13 @@ export function ProjectSettingsForm({
         titlePageAuthor: author || null,
         titlePageContact: contact || null,
         titlePageBasedOn: basedOn || null,
+        ...(isEpisode
+          ? {
+              episodeTitle: episodeTitle || null,
+              storyBy: storyBy || null,
+              teleplayBy: teleplayBy || null,
+            }
+          : {}),
       });
       setSaved(true);
       router.refresh();
@@ -59,6 +74,41 @@ export function ProjectSettingsForm({
           className={inputClass + " resize-none"}
         />
       </div>
+
+      {isEpisode && (
+        <div className="border-t border-neutral-200 pt-4 dark:border-neutral-800">
+          <h2 className="mb-3 text-sm font-medium text-neutral-500">
+            Episode credits
+          </h2>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <label className="text-sm">Episode title</label>
+              <input
+                value={episodeTitle}
+                onChange={(e) => setEpisodeTitle(e.target.value)}
+                placeholder={'e.g. "Pilot"'}
+                className={inputClass}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm">Story by</label>
+              <input
+                value={storyBy}
+                onChange={(e) => setStoryBy(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm">Teleplay by</label>
+              <input
+                value={teleplayBy}
+                onChange={(e) => setTeleplayBy(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="border-t border-neutral-200 pt-4 dark:border-neutral-800">
         <h2 className="mb-3 text-sm font-medium text-neutral-500">

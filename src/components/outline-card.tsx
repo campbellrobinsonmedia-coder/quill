@@ -14,6 +14,7 @@ export type OutlineCardData = {
   act: string | null;
   location: string | null;
   emotion: string | null;
+  storyThread: string | null;
   characters: { id: string; name: string }[];
 };
 
@@ -34,6 +35,7 @@ export function OutlineCard({
   const [act, setAct] = useState(card.act ?? "");
   const [location, setLocation] = useState(card.location ?? "");
   const [emotion, setEmotion] = useState(card.emotion ?? "");
+  const [storyThread, setStoryThread] = useState(card.storyThread ?? "");
   const [colorTag, setColorTag] = useState(card.colorTag ?? "neutral");
   const [characterIds, setCharacterIds] = useState(
     new Set(card.characters.map((c) => c.id))
@@ -63,6 +65,7 @@ export function OutlineCard({
         act: act || null,
         location: location || null,
         emotion: emotion || null,
+        storyThread: storyThread || null,
         colorTag,
         characterIds: Array.from(characterIds),
       });
@@ -97,8 +100,12 @@ export function OutlineCard({
             className="min-w-0 flex-1 text-left"
           >
             <p className="truncate text-sm font-medium">{card.title}</p>
-            {card.act && (
-              <p className="text-xs text-neutral-400">{card.act}</p>
+            {(card.act || card.storyThread) && (
+              <p className="text-xs text-neutral-400">
+                {[card.act, card.storyThread && `Thread ${card.storyThread}`]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
             )}
           </button>
         ) : (
@@ -144,12 +151,26 @@ export function OutlineCard({
             rows={3}
             className="w-full resize-none rounded border border-neutral-300 px-2 py-1 text-xs outline-none dark:border-neutral-700 dark:bg-neutral-900"
           />
-          <input
-            value={act}
-            onChange={(e) => setAct(e.target.value)}
-            placeholder="Act / thread (e.g. Act 2)"
-            className="w-full rounded border border-neutral-300 px-2 py-1 text-xs outline-none dark:border-neutral-700 dark:bg-neutral-900"
-          />
+          <div className="flex gap-2">
+            <input
+              value={act}
+              onChange={(e) => setAct(e.target.value)}
+              placeholder="Act (e.g. Act 2)"
+              className="w-1/2 rounded border border-neutral-300 px-2 py-1 text-xs outline-none dark:border-neutral-700 dark:bg-neutral-900"
+            />
+            <input
+              value={storyThread}
+              onChange={(e) => setStoryThread(e.target.value)}
+              placeholder="Storyline (A/B/C)"
+              list="story-thread-suggestions"
+              className="w-1/2 rounded border border-neutral-300 px-2 py-1 text-xs outline-none dark:border-neutral-700 dark:bg-neutral-900"
+            />
+            <datalist id="story-thread-suggestions">
+              <option value="A" />
+              <option value="B" />
+              <option value="C" />
+            </datalist>
+          </div>
           <div className="flex gap-2">
             <input
               value={location}

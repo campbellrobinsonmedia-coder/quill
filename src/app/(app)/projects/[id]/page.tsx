@@ -8,7 +8,14 @@ export default async function OutlinePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  await getProjectOrNotFound(id);
+  const project = await getProjectOrNotFound(id);
+
+  const season = project.seasonId
+    ? await prisma.season.findUnique({
+        where: { id: project.seasonId },
+        select: { seriesId: true },
+      })
+    : null;
 
   const [cards, characters] = await Promise.all([
     prisma.outlineCard.findMany({
@@ -22,11 +29,14 @@ export default async function OutlinePage({
         act: true,
         location: true,
         emotion: true,
+        storyThread: true,
         characters: { select: { id: true, name: true } },
       },
     }),
     prisma.character.findMany({
-      where: { projectId: id },
+      where: season
+        ? { OR: [{ projectId: id }, { seriesId: season.seriesId }] }
+        : { projectId: id },
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),

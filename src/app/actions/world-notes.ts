@@ -23,6 +23,24 @@ export async function createWorldNote(projectId: string, title: string) {
   revalidatePath(`/projects/${projectId}/write`);
 }
 
+export async function createSeriesWorldNote(seriesId: string, title: string) {
+  const userId = await requireUserId();
+  const series = await prisma.series.findFirst({
+    where: { id: seriesId, userId },
+    select: { id: true },
+  });
+  if (!series) throw new Error("Not found");
+
+  const trimmed = title.trim();
+  if (!trimmed) return;
+
+  await prisma.worldNote.create({
+    data: { seriesId, title: trimmed },
+  });
+
+  revalidatePath(`/series/${seriesId}/bible`);
+}
+
 export async function updateWorldNote(
   noteId: string,
   data: { title?: string; category?: string | null; description?: string }
@@ -30,24 +48,42 @@ export async function updateWorldNote(
   const userId = await requireUserId();
   const note = await prisma.worldNote.findFirst({
     where: { id: noteId },
-    include: { project: { select: { userId: true, id: true } } },
+    include: {
+      project: { select: { userId: true, id: true } },
+      series: { select: { userId: true, id: true } },
+    },
   });
-  if (!note || note.project.userId !== userId) throw new Error("Not found");
+  const ownerId = note?.project?.userId ?? note?.series?.userId;
+  if (!note || ownerId !== userId) throw new Error("Not found");
 
   await prisma.worldNote.update({ where: { id: noteId }, data });
-  revalidatePath(`/projects/${note.project.id}/world`);
-  revalidatePath(`/projects/${note.project.id}/write`);
+  if (note.project) {
+    revalidatePath(`/projects/${note.project.id}/world`);
+    revalidatePath(`/projects/${note.project.id}/write`);
+  }
+  if (note.series) {
+    revalidatePath(`/series/${note.series.id}/bible`);
+  }
 }
 
 export async function deleteWorldNote(noteId: string) {
   const userId = await requireUserId();
   const note = await prisma.worldNote.findFirst({
     where: { id: noteId },
-    include: { project: { select: { userId: true, id: true } } },
+    include: {
+      project: { select: { userId: true, id: true } },
+      series: { select: { userId: true, id: true } },
+    },
   });
-  if (!note || note.project.userId !== userId) throw new Error("Not found");
+  const ownerId = note?.project?.userId ?? note?.series?.userId;
+  if (!note || ownerId !== userId) throw new Error("Not found");
 
   await prisma.worldNote.delete({ where: { id: noteId } });
-  revalidatePath(`/projects/${note.project.id}/world`);
-  revalidatePath(`/projects/${note.project.id}/write`);
+  if (note.project) {
+    revalidatePath(`/projects/${note.project.id}/world`);
+    revalidatePath(`/projects/${note.project.id}/write`);
+  }
+  if (note.series) {
+    revalidatePath(`/series/${note.series.id}/bible`);
+  }
 }

@@ -45,21 +45,32 @@ export async function updateCard(
     act?: string | null;
     location?: string | null;
     emotion?: string | null;
+    storyThread?: string | null;
     characterIds?: string[];
   }
 ) {
   const userId = await requireUserId();
   const card = await prisma.outlineCard.findFirst({
     where: { id: cardId },
-    include: { project: { select: { userId: true, id: true } } },
+    include: {
+      project: {
+        select: { userId: true, id: true, season: { select: { seriesId: true } } },
+      },
+    },
   });
   if (!card || card.project.userId !== userId) throw new Error("Not found");
 
   const { characterIds, ...rest } = data;
 
   if (characterIds) {
+    const seriesId = card.project.season?.seriesId;
     const owned = await prisma.character.findMany({
-      where: { id: { in: characterIds }, projectId: card.project.id },
+      where: {
+        id: { in: characterIds },
+        OR: seriesId
+          ? [{ projectId: card.project.id }, { seriesId }]
+          : [{ projectId: card.project.id }],
+      },
       select: { id: true },
     });
     await prisma.outlineCard.update({

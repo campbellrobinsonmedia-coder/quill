@@ -1,9 +1,15 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { createCharacter } from "@/app/actions/characters";
+import { createCharacter, createSeriesCharacter } from "@/app/actions/characters";
 
-export function NewCharacterForm({ projectId }: { projectId: string }) {
+export function NewCharacterForm({
+  projectId,
+  seriesId,
+}: {
+  projectId?: string;
+  seriesId?: string;
+}) {
   const [name, setName] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -13,7 +19,11 @@ export function NewCharacterForm({ projectId }: { projectId: string }) {
     if (!trimmed) return;
     setName("");
     startTransition(async () => {
-      await createCharacter(projectId, trimmed);
+      if (seriesId) {
+        await createSeriesCharacter(seriesId, trimmed);
+      } else if (projectId) {
+        await createCharacter(projectId, trimmed);
+      }
     });
   }
 

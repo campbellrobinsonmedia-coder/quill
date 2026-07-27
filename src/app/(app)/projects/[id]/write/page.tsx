@@ -11,6 +11,13 @@ export default async function WritePage({
   const { id } = await params;
   const project = await getProjectOrNotFound(id);
 
+  const season = project.seasonId
+    ? await prisma.season.findUnique({
+        where: { id: project.seasonId },
+        select: { seriesId: true },
+      })
+    : null;
+
   let draft = await prisma.draft.findUnique({ where: { projectId: id } });
   if (!draft) {
     draft = await prisma.draft.create({
@@ -28,12 +35,16 @@ export default async function WritePage({
       select: { id: true, wordCount: true, label: true, createdAt: true },
     }),
     prisma.character.findMany({
-      where: { projectId: id },
+      where: season
+        ? { OR: [{ projectId: id }, { seriesId: season.seriesId }] }
+        : { projectId: id },
       orderBy: { name: "asc" },
       select: { name: true },
     }),
     prisma.worldNote.findMany({
-      where: { projectId: id },
+      where: season
+        ? { OR: [{ projectId: id }, { seriesId: season.seriesId }] }
+        : { projectId: id },
       select: { title: true },
     }),
     prisma.draftComment.findMany({
