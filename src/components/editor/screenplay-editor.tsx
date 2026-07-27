@@ -38,9 +38,10 @@ const TYPE_STYLES: Record<ScreenplayElementType, string> = {
 };
 
 // Industry-standard US Letter page at 96dpi. Margins/indents above are
-// fixed physical measurements, so on narrow viewports we scale the whole
-// page down rather than reflowing it — reflowing would break the accuracy
-// that page-count and PDF export rely on.
+// fixed physical measurements, so we scale the page as a whole rather than
+// reflowing it — reflowing would break the accuracy that page-count and PDF
+// export rely on. It auto-fits to the container by default, but zoom
+// controls let the user override that and scroll horizontally instead.
 const PAGE_WIDTH_PX = 816;
 
 function elementSignature(el: ScreenplayElement): string {
@@ -92,7 +93,9 @@ export function ScreenplayEditor({
   const pendingFocus = useRef<{ id: string; pos: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const pageRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
+  const [autoScale, setAutoScale] = useState(1);
+  const [manualZoom, setManualZoom] = useState<number | null>(null);
+  const scale = manualZoom ?? autoScale;
   const [pageHeight, setPageHeight] = useState<number>();
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [openCommentFor, setOpenCommentFor] = useState<string | null>(null);
@@ -116,7 +119,7 @@ export function ScreenplayEditor({
   useEffect(() => {
     if (!containerRef.current) return;
     const container = containerRef.current;
-    const update = () => setScale(Math.min(1, container.clientWidth / PAGE_WIDTH_PX));
+    const update = () => setAutoScale(Math.min(1, container.clientWidth / PAGE_WIDTH_PX));
     update();
     const ro = new ResizeObserver(update);
     ro.observe(container);
@@ -128,6 +131,10 @@ export function ScreenplayEditor({
       setPageHeight(pageRef.current.scrollHeight * scale);
     }
   }, [scale, elements]);
+
+  function zoomBy(delta: number) {
+    setManualZoom(Math.min(2, Math.max(0.5, (manualZoom ?? autoScale) + delta)));
+  }
 
   function resize(el: HTMLTextAreaElement) {
     el.style.height = "auto";
@@ -324,12 +331,13 @@ export function ScreenplayEditor({
             setOpenCommentFor(isOpen ? null : el.id);
             setNewCommentText("");
           }}
-          className={`text-xs ${
+          className={`p-1 text-xs ${
             elComments.length > 0
               ? "text-amber-600"
-              : "text-neutral-300 opacity-0 group-hover:opacity-100 dark:text-neutral-700"
+              : "text-neutral-300 opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 dark:text-neutral-700"
           }`}
           title="Comments"
+          aria-label="Comments"
         >
           💬{elComments.length > 0 ? elComments.length : ""}
         </button>
@@ -425,7 +433,7 @@ export function ScreenplayEditor({
           <button
             type="button"
             onClick={() => toggleOmitted(index)}
-            className="absolute -right-16 top-0 text-[10px] text-neutral-300 opacity-0 hover:text-neutral-600 group-hover:opacity-100 dark:text-neutral-700"
+            className="absolute -right-16 top-0 px-1 py-1 text-xs text-neutral-300 opacity-40 hover:text-neutral-600 group-hover:opacity-100 group-focus-within:opacity-100 dark:text-neutral-700"
             style={{ fontFamily: "system-ui, sans-serif" }}
           >
             Omit
@@ -435,7 +443,7 @@ export function ScreenplayEditor({
           <button
             type="button"
             onClick={() => pairDualDialogue(index)}
-            className="absolute -right-24 top-0 text-[10px] text-neutral-300 opacity-0 hover:text-neutral-600 group-hover:opacity-100 dark:text-neutral-700"
+            className="absolute -right-24 top-0 px-1 py-1 text-xs text-neutral-300 opacity-40 hover:text-neutral-600 group-hover:opacity-100 group-focus-within:opacity-100 dark:text-neutral-700"
             style={{ fontFamily: "system-ui, sans-serif" }}
           >
             Pair dual
@@ -466,7 +474,7 @@ export function ScreenplayEditor({
             <button
               type="button"
               onClick={() => toggleOmitted(i)}
-              className="text-[10px] text-neutral-400 opacity-0 hover:text-neutral-700 group-hover:opacity-100"
+              className="px-1 py-1 text-xs text-neutral-400 opacity-40 hover:text-neutral-700 group-hover:opacity-100 group-focus-within:opacity-100"
               style={{ fontFamily: "system-ui, sans-serif" }}
             >
               Restore
@@ -518,20 +526,47 @@ export function ScreenplayEditor({
   }
 
   return (
-    <div ref={containerRef} className="w-full overflow-x-hidden">
-      <div style={{ height: pageHeight }} className="flex justify-center">
-        <div
-          ref={pageRef}
-          className="shrink-0 bg-white p-[1in] text-black shadow-sm dark:bg-neutral-950 dark:text-neutral-100"
-          style={{
-            width: PAGE_WIDTH_PX,
-            transform: `scale(${scale})`,
-            transformOrigin: "top center",
-            fontFamily: '"Courier New", Courier, monospace',
-            fontSize: "12pt",
-          }}
+    <div className="w-full">
+      <div className="sticky top-0 z-10 mb-2 flex items-center justify-end gap-1 bg-white/90 py-1 backdrop-blur dark:bg-neutral-950/90">
+        <button
+          type="button"
+          onClick={() => zoomBy(-0.1)}
+          aria-label="Zoom out"
+          className="inline-flex h-8 w-8 items-center justify-center rounded border border-neutral-300 text-sm dark:border-neutral-700"
         >
-          {renderElements()}
+          −
+        </button>
+        <button
+          type="button"
+          onClick={() => setManualZoom(null)}
+          className="min-w-12 rounded border border-neutral-300 px-2 text-xs text-neutral-500 dark:border-neutral-700"
+        >
+          {Math.round(scale * 100)}%
+        </button>
+        <button
+          type="button"
+          onClick={() => zoomBy(0.1)}
+          aria-label="Zoom in"
+          className="inline-flex h-8 w-8 items-center justify-center rounded border border-neutral-300 text-sm dark:border-neutral-700"
+        >
+          +
+        </button>
+      </div>
+      <div ref={containerRef} className="w-full overflow-x-auto">
+        <div style={{ height: pageHeight }} className="flex justify-center">
+          <div
+            ref={pageRef}
+            className="shrink-0 bg-white p-[1in] text-black shadow-sm dark:bg-neutral-950 dark:text-neutral-100"
+            style={{
+              width: PAGE_WIDTH_PX,
+              transform: `scale(${scale})`,
+              transformOrigin: "top center",
+              fontFamily: '"Courier New", Courier, monospace',
+              fontSize: "12pt",
+            }}
+          >
+            {renderElements()}
+          </div>
         </div>
       </div>
     </div>

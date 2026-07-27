@@ -6,7 +6,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { FORMAT_TEMPLATES } from "@/lib/format-templates";
-import { createEmptyContent } from "@/lib/draft-content";
+import { createEmptyContent, createSampleContent } from "@/lib/draft-content";
 
 const createProjectSchema = z.object({
   title: z.string().min(1, "Title is required").max(200),
@@ -50,6 +50,46 @@ export async function createProject(formData: FormData) {
 
   revalidatePath("/dashboard");
   redirect(`/projects/${project.id}`);
+}
+
+const createOnboardingProjectSchema = z.object({
+  title: z.string().min(1, "Title is required").max(200),
+  formatTemplate: z.enum(
+    FORMAT_TEMPLATES.map((t) => t.id) as [string, ...string[]]
+  ),
+  useSample: z.boolean(),
+});
+
+export async function createOnboardingProject(data: {
+  title: string;
+  formatTemplate: string;
+  useSample: boolean;
+}) {
+  const userId = await requireUserId();
+  const parsed = createOnboardingProjectSchema.parse(data);
+
+  const template = FORMAT_TEMPLATES.find(
+    (t) => t.id === parsed.formatTemplate
+  )!;
+
+  const project = await prisma.project.create({
+    data: {
+      userId,
+      title: parsed.title,
+      formatTemplate: template.id,
+      writingMode: template.writingMode,
+      draft: {
+        create: {
+          content: parsed.useSample
+            ? createSampleContent(template.writingMode)
+            : createEmptyContent(template.writingMode),
+        },
+      },
+    },
+  });
+
+  revalidatePath("/dashboard");
+  redirect(`/projects/${project.id}/write?intro=1`);
 }
 
 const createEpisodeSchema = z.object({

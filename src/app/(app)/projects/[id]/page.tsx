@@ -44,6 +44,7 @@ export default async function OutlinePage({
 
   return (
     <OutlineBoard
+      key={id}
       projectId={id}
       initialCards={cards}
       availableCharacters={characters}

@@ -20,19 +20,24 @@ export default function AppLayout({
             Ideas
           </Link>
         </nav>
-        <form
-          action={async () => {
-            "use server";
-            await signOut({ redirectTo: "/" });
-          }}
-        >
-          <button
-            type="submit"
-            className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
+        <div className="flex items-center gap-5 text-sm">
+          <Link href="/account" className="text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100">
+            Account
+          </Link>
+          <form
+            action={async () => {
+              "use server";
+              await signOut({ redirectTo: "/" });
+            }}
           >
-            Log out
-          </button>
-        </form>
+            <button
+              type="submit"
+              className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
+            >
+              Log out
+            </button>
+          </form>
+        </div>
       </header>
       <main className="flex min-w-0 flex-1 flex-col">{children}</main>
     </div>

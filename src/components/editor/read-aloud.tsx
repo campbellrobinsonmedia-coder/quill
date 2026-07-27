@@ -3,7 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import type { DraftContent } from "@/lib/draft-content";
 
-export function ReadAloud({ content }: { content: DraftContent }) {
+export function ReadAloud({
+  content,
+  className = "",
+}: {
+  content: DraftContent;
+  className?: string;
+}) {
   const [isPlaying, setIsPlaying] = useState(false);
   const voicesRef = useRef<SpeechSynthesisVoice[]>([]);
   const voiceForCharacter = useRef<Map<string, SpeechSynthesisVoice>>(new Map());
@@ -65,7 +71,9 @@ export function ReadAloud({ content }: { content: DraftContent }) {
   return (
     <button
       onClick={isPlaying ? stop : play}
-      className={isPlaying ? "text-neutral-900 dark:text-neutral-100" : "hover:text-neutral-900 dark:hover:text-neutral-100"}
+      className={`${className} ${
+        isPlaying ? "text-neutral-900 dark:text-neutral-100" : ""
+      }`}
     >
       {isPlaying ? "Stop reading" : "Read aloud"}
     </button>

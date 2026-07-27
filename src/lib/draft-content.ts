@@ -43,6 +43,24 @@ export function createEmptyContent(writingMode: "PROSE" | "SCREENPLAY"): DraftCo
   };
 }
 
+export function createSampleContent(writingMode: "PROSE" | "SCREENPLAY"): DraftContent {
+  if (writingMode === "PROSE") {
+    return {
+      type: "prose",
+      text: "The rain hadn't let up since morning, and Mara was starting to think it never would.\n\nShe pulled her coat tighter and kept walking. Whatever waited for her at the harbor could wait a little longer — but not much longer than that.",
+    };
+  }
+  return {
+    type: "screenplay",
+    elements: [
+      { id: makeId(), type: "scene_heading", text: "INT. HARBOR OFFICE - NIGHT" },
+      { id: makeId(), type: "action", text: "Rain streaks the window. MARA VOSS, 30s, unreadable, studies a chart pinned to the wall." },
+      { id: makeId(), type: "character", text: "MARA" },
+      { id: makeId(), type: "dialogue", text: "Whatever's out there, it's not waiting for good weather." },
+    ],
+  };
+}
+
 export function makeId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();

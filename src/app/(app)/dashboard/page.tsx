@@ -8,6 +8,7 @@ import { NewProjectForm } from "./new-project-form";
 import { NewSeriesForm } from "../series/new-series-form";
 import { DeleteProjectButton } from "./delete-project-button";
 import { DeleteSeriesButton } from "./delete-series-button";
+import { CollapsibleSection } from "@/components/collapsible-section";
 
 type ListItem = {
   kind: "script" | "series";
@@ -22,7 +23,7 @@ type ListItem = {
 export default async function DashboardPage() {
   const userId = await requireUserId();
 
-  const [projects, series] = await Promise.all([
+  const [projects, series, mostRecentDraft] = await Promise.all([
     prisma.project.findMany({
       where: { userId, seasonId: null },
       orderBy: { updatedAt: "desc" },
@@ -32,6 +33,20 @@ export default async function DashboardPage() {
       orderBy: { updatedAt: "desc" },
       include: {
         seasons: { select: { _count: { select: { episodes: true } } } },
+      },
+    }),
+    prisma.project.findFirst({
+      where: { userId, status: "ACTIVE" },
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        title: true,
+        episodeTitle: true,
+        episodeNumber: true,
+        logline: true,
+        season: {
+          select: { number: true, series: { select: { title: true } } },
+        },
       },
     }),
   ]);
@@ -70,16 +85,51 @@ export default async function DashboardPage() {
   const active = items.filter((i) => i.status === "ACTIVE");
   const archived = items.filter((i) => i.status === "ARCHIVED");
 
+  const continueLabel = mostRecentDraft
+    ? mostRecentDraft.season
+      ? [
+          mostRecentDraft.season.series.title,
+          `Season ${mostRecentDraft.season.number}`,
+          `Episode ${mostRecentDraft.episodeNumber}${
+            mostRecentDraft.episodeTitle ? `: ${mostRecentDraft.episodeTitle}` : ""
+          }`,
+        ].join(" · ")
+      : mostRecentDraft.logline ?? undefined
+    : undefined;
+
   return (
     <div className="mx-auto w-full max-w-3xl flex-1 space-y-10 p-6">
-      <section className="space-y-4">
-        <h1 className="text-lg font-semibold">New script</h1>
-        <NewProjectForm />
-      </section>
+      {mostRecentDraft && (
+        <section>
+          <Link
+            href={`/projects/${mostRecentDraft.id}/write`}
+            className="flex items-center justify-between gap-4 rounded-md bg-neutral-900 p-5 text-white dark:bg-white dark:text-neutral-900"
+          >
+            <div className="min-w-0">
+              <p className="text-xs uppercase tracking-wide opacity-70">
+                Continue writing
+              </p>
+              <p className="truncate text-lg font-semibold">
+                {mostRecentDraft.title}
+              </p>
+              {continueLabel && (
+                <p className="truncate text-sm opacity-80">{continueLabel}</p>
+              )}
+            </div>
+            <span aria-hidden className="shrink-0 text-xl">
+              →
+            </span>
+          </Link>
+        </section>
+      )}
 
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold">New series</h2>
-        <NewSeriesForm />
+      <section className="flex gap-3">
+        <CollapsibleSection label="New script">
+          <NewProjectForm />
+        </CollapsibleSection>
+        <CollapsibleSection label="New series">
+          <NewSeriesForm />
+        </CollapsibleSection>
       </section>
 
       <section className="space-y-3">

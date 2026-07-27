@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import {
   DndContext,
   closestCenter,
@@ -27,7 +27,11 @@ export function OutlineBoard({
   availableCharacters: { id: string; name: string }[];
 }) {
   const [cards, setCards] = useState(initialCards);
-  useEffect(() => setCards(initialCards), [initialCards]);
+  const [prevInitialCards, setPrevInitialCards] = useState(initialCards);
+  if (initialCards !== prevInitialCards) {
+    setPrevInitialCards(initialCards);
+    setCards(initialCards);
+  }
   const [newTitle, setNewTitle] = useState("");
   const [isPending, startTransition] = useTransition();
   const sensors = useSensors(
