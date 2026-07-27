@@ -20,6 +20,7 @@ export async function createWorldNote(projectId: string, title: string) {
   });
 
   revalidatePath(`/projects/${projectId}/world`);
+  revalidatePath(`/projects/${projectId}/write`);
 }
 
 export async function updateWorldNote(
@@ -35,6 +36,7 @@ export async function updateWorldNote(
 
   await prisma.worldNote.update({ where: { id: noteId }, data });
   revalidatePath(`/projects/${note.project.id}/world`);
+  revalidatePath(`/projects/${note.project.id}/write`);
 }
 
 export async function deleteWorldNote(noteId: string) {
@@ -47,4 +49,5 @@ export async function deleteWorldNote(noteId: string) {
 
   await prisma.worldNote.delete({ where: { id: noteId } });
   revalidatePath(`/projects/${note.project.id}/world`);
+  revalidatePath(`/projects/${note.project.id}/write`);
 }

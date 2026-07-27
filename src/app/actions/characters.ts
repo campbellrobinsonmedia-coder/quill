@@ -24,6 +24,8 @@ export async function createCharacter(projectId: string, name: string) {
   });
 
   revalidatePath(`/projects/${projectId}/characters`);
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/write`);
 }
 
 export async function updateCharacter(
@@ -46,6 +48,8 @@ export async function updateCharacter(
 
   await prisma.character.update({ where: { id: characterId }, data });
   revalidatePath(`/projects/${character.project.id}/characters`);
+  revalidatePath(`/projects/${character.project.id}`);
+  revalidatePath(`/projects/${character.project.id}/write`);
 }
 
 export async function deleteCharacter(characterId: string) {
@@ -60,4 +64,6 @@ export async function deleteCharacter(characterId: string) {
 
   await prisma.character.delete({ where: { id: characterId } });
   revalidatePath(`/projects/${character.project.id}/characters`);
+  revalidatePath(`/projects/${character.project.id}`);
+  revalidatePath(`/projects/${character.project.id}/write`);
 }

@@ -19,9 +19,11 @@ export type OutlineCardData = {
 
 export function OutlineCard({
   card,
+  number,
   availableCharacters,
 }: {
   card: OutlineCardData;
+  number: number;
   availableCharacters: { id: string; name: string }[];
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -75,6 +77,9 @@ export function OutlineCard({
       className="flex w-64 flex-col gap-2 rounded-md border border-neutral-200 bg-white p-3 shadow-sm dark:border-neutral-800 dark:bg-neutral-900"
     >
       <div className="flex items-start justify-between gap-2">
+        <span className="mt-1.5 shrink-0 text-xs font-medium tabular-nums text-neutral-400">
+          {number}
+        </span>
         <div
           {...attributes}
           {...listeners}

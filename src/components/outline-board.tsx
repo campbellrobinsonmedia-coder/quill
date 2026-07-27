@@ -12,7 +12,7 @@ import {
 import {
   SortableContext,
   arrayMove,
-  rectSortingStrategy,
+  horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { OutlineCard, type OutlineCardData } from "@/components/outline-card";
 import { createCard, reorderCards } from "@/app/actions/outline";
@@ -58,8 +58,8 @@ export function OutlineBoard({
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-6">
-      <form onSubmit={handleAdd} className="flex gap-2">
+    <div className="flex flex-1 flex-col gap-4 overflow-hidden p-6">
+      <form onSubmit={handleAdd} className="flex shrink-0 gap-2">
         <input
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
@@ -80,24 +80,36 @@ export function OutlineBoard({
           No cards yet — add your first scene or beat above.
         </p>
       ) : (
-        <DndContext
-          id={`outline-board-${projectId}`}
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext items={cards.map((c) => c.id)} strategy={rectSortingStrategy}>
-            <div className="flex flex-wrap gap-3">
-              {cards.map((card) => (
-                <OutlineCard
-                  key={card.id}
-                  card={card}
-                  availableCharacters={availableCharacters}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
+        <>
+          <p className="shrink-0 text-xs text-neutral-400">
+            {cards.length} card{cards.length === 1 ? "" : "s"} · left to right is story order · drag to reorder
+          </p>
+          <DndContext
+            id={`outline-board-${projectId}`}
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={cards.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
+              <div className="flex flex-1 items-start gap-0 overflow-x-auto pb-4">
+                {cards.map((card, index) => (
+                  <div key={card.id} className="flex shrink-0 items-center">
+                    <OutlineCard
+                      card={card}
+                      number={index + 1}
+                      availableCharacters={availableCharacters}
+                    />
+                    {index < cards.length - 1 && (
+                      <span className="mx-2 shrink-0 text-neutral-300 dark:text-neutral-700">
+                        →
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </>
       )}
     </div>
   );
