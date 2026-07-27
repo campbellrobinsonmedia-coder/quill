@@ -15,11 +15,11 @@ export function LoginForm() {
     startTransition(async () => {
       const res = await signIn("credentials", {
         email: String(formData.get("email")),
-        password: String(formData.get("password")),
+        password: String(formData.get("pin")),
         redirect: false,
       });
       if (res?.error) {
-        setError("Incorrect email or password");
+        setError("Incorrect email or PIN");
         return;
       }
       router.push(searchParams.get("callbackUrl") || "/dashboard");
@@ -43,16 +43,19 @@ export function LoginForm() {
         />
       </div>
       <div className="space-y-1">
-        <label htmlFor="password" className="text-sm font-medium">
-          Password
+        <label htmlFor="pin" className="text-sm font-medium">
+          PIN
         </label>
         <input
-          id="password"
-          name="password"
+          id="pin"
+          name="pin"
           type="password"
+          inputMode="numeric"
+          pattern="\d{4}"
+          maxLength={4}
           required
-          autoComplete="current-password"
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900"
+          autoComplete="off"
+          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-center text-lg tracking-[0.5em] outline-none focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900"
         />
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}

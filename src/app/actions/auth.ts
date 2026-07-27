@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 
 const signupSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  pin: z.string().regex(/^\d{4}$/, "PIN must be exactly 4 digits"),
 });
 
 export type SignupState = {
@@ -19,7 +19,7 @@ export async function signupAction(
 ): Promise<SignupState> {
   const parsed = signupSchema.safeParse({
     email: formData.get("email"),
-    password: formData.get("password"),
+    pin: formData.get("pin"),
   });
 
   if (!parsed.success) {
@@ -33,7 +33,7 @@ export async function signupAction(
     return { error: "An account with that email already exists" };
   }
 
-  const passwordHash = await bcrypt.hash(parsed.data.password, 10);
+  const passwordHash = await bcrypt.hash(parsed.data.pin, 10);
   await prisma.user.create({
     data: { email, passwordHash },
   });

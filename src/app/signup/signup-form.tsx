@@ -20,10 +20,10 @@ export function SignupForm() {
       }
 
       const email = String(formData.get("email"));
-      const password = String(formData.get("password"));
+      const pin = String(formData.get("pin"));
       const res = await signIn("credentials", {
         email,
-        password,
+        password: pin,
         redirect: false,
       });
       if (res?.error) {
@@ -51,17 +51,19 @@ export function SignupForm() {
         />
       </div>
       <div className="space-y-1">
-        <label htmlFor="password" className="text-sm font-medium">
-          Password
+        <label htmlFor="pin" className="text-sm font-medium">
+          4-digit PIN
         </label>
         <input
-          id="password"
-          name="password"
+          id="pin"
+          name="pin"
           type="password"
+          inputMode="numeric"
+          pattern="\d{4}"
+          maxLength={4}
           required
-          minLength={8}
-          autoComplete="new-password"
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900"
+          autoComplete="off"
+          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-center text-lg tracking-[0.5em] outline-none focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900"
         />
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
