@@ -21,10 +21,12 @@ export function OutlineBoard({
   projectId,
   initialCards,
   availableCharacters,
+  availableScenes = [],
 }: {
   projectId: string;
   initialCards: OutlineCardData[];
   availableCharacters: { id: string; name: string }[];
+  availableScenes?: { id: string; label: string }[];
 }) {
   const [cards, setCards] = useState(initialCards);
   const [prevInitialCards, setPrevInitialCards] = useState(initialCards);
@@ -101,7 +103,9 @@ export function OutlineBoard({
                     <OutlineCard
                       card={card}
                       number={index + 1}
+                      projectId={projectId}
                       availableCharacters={availableCharacters}
+                      availableScenes={availableScenes}
                     />
                     {index < cards.length - 1 && (
                       <span className="mx-2 shrink-0 text-neutral-300 dark:text-neutral-700">

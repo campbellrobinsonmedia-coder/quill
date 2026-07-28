@@ -221,6 +221,21 @@ export function groupScenes(elements: ScreenplayElement[]): Scene[] {
   return scenes;
 }
 
+export type SceneOption = { id: string; label: string };
+
+// Lightweight list of scene headings for linking an outline card to a scene
+// in the draft, independent of lock state or omitted status.
+export function listScenes(content: DraftContent): SceneOption[] {
+  if (content.type !== "screenplay") return [];
+  const numbers = computeSceneNumbers(content.elements, false);
+  return content.elements
+    .filter((el) => el.type === "scene_heading")
+    .map((el) => ({
+      id: el.id,
+      label: `${numbers.get(el.id) ?? "?"}. ${el.text.trim() || "Untitled scene"}`,
+    }));
+}
+
 export const ELEMENT_LABELS: Record<ScreenplayElementType, string> = {
   scene_heading: "Scene Heading",
   action: "Action",

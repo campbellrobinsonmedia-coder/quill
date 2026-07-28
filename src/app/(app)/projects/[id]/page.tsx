@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getProjectOrNotFound } from "@/lib/get-project";
 import { OutlineBoard } from "@/components/outline-board";
+import { listScenes, type DraftContent } from "@/lib/draft-content";
 
 export default async function OutlinePage({
   params,
@@ -17,7 +18,7 @@ export default async function OutlinePage({
       })
     : null;
 
-  const [cards, characters] = await Promise.all([
+  const [cards, characters, draft] = await Promise.all([
     prisma.outlineCard.findMany({
       where: { projectId: id },
       orderBy: { order: "asc" },
@@ -30,6 +31,7 @@ export default async function OutlinePage({
         location: true,
         emotion: true,
         storyThread: true,
+        linkedSceneId: true,
         characters: { select: { id: true, name: true } },
       },
     }),
@@ -40,7 +42,15 @@ export default async function OutlinePage({
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
+    prisma.draft.findUnique({
+      where: { projectId: id },
+      select: { content: true },
+    }),
   ]);
+
+  const availableScenes = draft
+    ? listScenes(draft.content as unknown as DraftContent)
+    : [];
 
   return (
     <OutlineBoard
@@ -48,6 +58,7 @@ export default async function OutlinePage({
       projectId={id}
       initialCards={cards}
       availableCharacters={characters}
+      availableScenes={availableScenes}
     />
   );
 }

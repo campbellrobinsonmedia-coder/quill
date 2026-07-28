@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { updateCard, deleteCard } from "@/app/actions/outline";
@@ -15,17 +16,22 @@ export type OutlineCardData = {
   location: string | null;
   emotion: string | null;
   storyThread: string | null;
+  linkedSceneId: string | null;
   characters: { id: string; name: string }[];
 };
 
 export function OutlineCard({
   card,
   number,
+  projectId,
   availableCharacters,
+  availableScenes = [],
 }: {
   card: OutlineCardData;
   number: number;
+  projectId: string;
   availableCharacters: { id: string; name: string }[];
+  availableScenes?: { id: string; label: string }[];
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: card.id });
@@ -36,6 +42,7 @@ export function OutlineCard({
   const [location, setLocation] = useState(card.location ?? "");
   const [emotion, setEmotion] = useState(card.emotion ?? "");
   const [storyThread, setStoryThread] = useState(card.storyThread ?? "");
+  const [linkedSceneId, setLinkedSceneId] = useState(card.linkedSceneId ?? "");
   const [colorTag, setColorTag] = useState(card.colorTag ?? "neutral");
   const [characterIds, setCharacterIds] = useState(
     new Set(card.characters.map((c) => c.id))
@@ -66,6 +73,7 @@ export function OutlineCard({
         location: location || null,
         emotion: emotion || null,
         storyThread: storyThread || null,
+        linkedSceneId: linkedSceneId || null,
         colorTag,
         characterIds: Array.from(characterIds),
       });
@@ -129,6 +137,14 @@ export function OutlineCard({
               {[card.location, card.emotion].filter(Boolean).join(" · ")}
             </p>
           )}
+          {card.linkedSceneId && (
+            <Link
+              href={`/projects/${projectId}/write?scene=${card.linkedSceneId}`}
+              className="text-xs text-neutral-500 underline underline-offset-2 hover:text-neutral-900 dark:hover:text-neutral-100"
+            >
+              → Go to scene
+            </Link>
+          )}
           {card.characters.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {card.characters.map((c) => (
@@ -171,6 +187,20 @@ export function OutlineCard({
               <option value="C" />
             </datalist>
           </div>
+          {availableScenes.length > 0 && (
+            <select
+              value={linkedSceneId}
+              onChange={(e) => setLinkedSceneId(e.target.value)}
+              className="w-full rounded border border-neutral-300 px-2 py-1 text-xs outline-none dark:border-neutral-700 dark:bg-neutral-900"
+            >
+              <option value="">Not linked to a scene</option>
+              {availableScenes.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          )}
           <div className="flex gap-2">
             <input
               value={location}

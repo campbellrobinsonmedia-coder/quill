@@ -71,6 +71,8 @@ export function ScreenplayEditor({
   sceneNumbersLocked = false,
   revisionBaseline = null,
   hideAction = false,
+  scrollToElementId = null,
+  onScrolledToElement,
   comments = [],
   onCreateComment,
   onUpdateComment,
@@ -83,6 +85,8 @@ export function ScreenplayEditor({
   sceneNumbersLocked?: boolean;
   revisionBaseline?: ScreenplayContent | null;
   hideAction?: boolean;
+  scrollToElementId?: string | null;
+  onScrolledToElement?: () => void;
   comments?: CommentData[];
   onCreateComment?: (elementId: string, text: string) => void;
   onUpdateComment?: (id: string, data: { text?: string; resolved?: boolean }) => void;
@@ -131,6 +135,17 @@ export function ScreenplayEditor({
       setPageHeight(pageRef.current.scrollHeight * scale);
     }
   }, [scale, elements]);
+
+  useEffect(() => {
+    if (!scrollToElementId) return;
+    const el = refs.current.get(scrollToElementId);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.focus();
+    }
+    onScrolledToElement?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scrollToElementId]);
 
   function zoomBy(delta: number) {
     setManualZoom(Math.min(2, Math.max(0.5, (manualZoom ?? autoScale) + delta)));

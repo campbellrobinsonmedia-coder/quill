@@ -46,6 +46,7 @@ export async function updateCard(
     location?: string | null;
     emotion?: string | null;
     storyThread?: string | null;
+    linkedSceneId?: string | null;
     characterIds?: string[];
   }
 ) {

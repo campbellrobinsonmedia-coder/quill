@@ -72,11 +72,20 @@ export function WriteEditor({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showIntro, setShowIntro] = useState(() => searchParams.get("intro") === "1");
+  const [scrollToSceneId, setScrollToSceneId] = useState(() => searchParams.get("scene"));
 
   function dismissIntro() {
     setShowIntro(false);
     const params = new URLSearchParams(searchParams.toString());
     params.delete("intro");
+    const qs = params.toString();
+    router.replace(qs ? `?${qs}` : window.location.pathname, { scroll: false });
+  }
+
+  function clearSceneParam() {
+    setScrollToSceneId(null);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("scene");
     const qs = params.toString();
     router.replace(qs ? `?${qs}` : window.location.pathname, { scroll: false });
   }
@@ -409,6 +418,8 @@ export function WriteEditor({
               sceneNumbersLocked={sceneNumbersLocked}
               revisionBaseline={revisionBaseline}
               hideAction={hideAction}
+              scrollToElementId={scrollToSceneId}
+              onScrolledToElement={clearSceneParam}
               comments={comments}
               onCreateComment={(elementId, text) => {
                 startTransition(async () => {
