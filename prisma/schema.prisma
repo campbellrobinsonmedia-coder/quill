@@ -61,8 +61,25 @@ model Season {
 
   episodes Project[]
   ideas    Idea[]
+  beats    SeasonBeat[]
 
   @@index([seriesId])
+}
+
+model SeasonBeat {
+  id        String   @id @default(cuid())
+  seasonId  String
+  season    Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  title     String
+  summary   String?
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  order     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([seasonId])
+  @@index([projectId])
 }
 
 model Project {
@@ -90,6 +107,7 @@ model Project {
   characters    Character[]
   outlineCards  OutlineCard[]
   worldNotes    WorldNote[]
+  seasonBeats   SeasonBeat[]
   draft         Draft?
 
   @@index([seasonId])
