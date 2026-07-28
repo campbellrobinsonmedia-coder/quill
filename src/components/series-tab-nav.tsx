@@ -9,6 +9,7 @@ export function SeriesTabNav({ seriesId }: { seriesId: string }) {
   const tabs = [
     { href: base, label: "Overview" },
     { href: `${base}/bible`, label: "Series Bible" },
+    { href: `${base}/ideas`, label: "Ideas" },
   ];
 
   return (

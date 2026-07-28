@@ -45,6 +45,7 @@ model Series {
   seasons    Season[]
   characters Character[]
   worldNotes WorldNote[]
+  ideas      Idea[]
 
   @@index([userId])
 }
@@ -59,6 +60,7 @@ model Season {
   updatedAt DateTime @updatedAt
 
   episodes Project[]
+  ideas    Idea[]
 
   @@index([seriesId])
 }
@@ -99,12 +101,18 @@ model Idea {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   projectId String?
   project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  seriesId  String?
+  series    Series?  @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  seasonId  String?
+  season    Season?  @relation(fields: [seasonId], references: [id], onDelete: SetNull)
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([projectId])
+  @@index([seriesId])
+  @@index([seasonId])
 }
 
 model Character {
