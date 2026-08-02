@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
-export default function AccountRedirect() {
+export default function ChangelogRedirect() {
   redirect("/settings");
 }

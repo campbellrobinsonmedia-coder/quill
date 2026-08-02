@@ -21,8 +21,8 @@ export default function AppLayout({
           </Link>
         </nav>
         <div className="flex items-center gap-5 text-sm">
-          <Link href="/account" className="text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100">
-            Account
+          <Link href="/settings" className="text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100">
+            Settings
           </Link>
           <form
             action={async () => {
