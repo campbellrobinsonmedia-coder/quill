@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { templateLabel } from "@/lib/format-templates";
 import { NewEpisodeForm } from "./new-episode-form";
 import { NewSeasonIdeaForm } from "./new-season-idea-form";
-import { SeasonBeatBoard } from "./season-beat-board";
+import { BeatBoard } from "@/components/beat-board";
 import { deleteIdea } from "@/app/actions/ideas";
 
 type EpisodeStatus = "Idea" | "Outlined" | "Drafted" | "Locked";
@@ -48,10 +48,10 @@ export default async function SeasonBoardPage({
       orderBy: { createdAt: "desc" },
       include: { project: { select: { title: true, episodeNumber: true } } },
     }),
-    prisma.seasonBeat.findMany({
+    prisma.beat.findMany({
       where: { seasonId },
       orderBy: { order: "asc" },
-      select: { id: true, title: true, summary: true, projectId: true },
+      select: { id: true, title: true, summary: true, projectId: true, linkedCardId: true },
     }),
   ]);
 
@@ -96,7 +96,13 @@ export default async function SeasonBoardPage({
 
       <section className="space-y-3 border-b border-neutral-200 pb-6 dark:border-neutral-800">
         <h3 className="text-sm font-medium text-neutral-500">Season arc</h3>
-        <SeasonBeatBoard seasonId={seasonId} initialBeats={beats} episodes={episodeOptions} />
+        <BeatBoard
+          scope={{ seasonId }}
+          initialBeats={beats}
+          episodeOptions={episodeOptions}
+          placeholder="New season beat (e.g. Midpoint reveal)…"
+          emptyMessage="No season-level beats yet — sketch the season's shape here before breaking it into episodes."
+        />
       </section>
 
       <NewEpisodeForm seasonId={seasonId} />

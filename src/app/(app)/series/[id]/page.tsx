@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSeriesOrNotFound } from "@/lib/get-series";
 import { SeriesMetaForm } from "./series-meta-form";
 import { NewSeasonForm } from "./new-season-form";
+import { BeatBoard } from "@/components/beat-board";
 
 export default async function SeriesOverviewPage({
   params,
@@ -12,18 +13,39 @@ export default async function SeriesOverviewPage({
   const { id } = await params;
   const series = await getSeriesOrNotFound(id);
 
-  const seasons = await prisma.season.findMany({
-    where: { seriesId: id },
-    orderBy: { number: "asc" },
-    include: {
-      episodes: {
-        select: { id: true, status: true },
+  const [seasons, beats] = await Promise.all([
+    prisma.season.findMany({
+      where: { seriesId: id },
+      orderBy: { number: "asc" },
+      include: {
+        episodes: {
+          select: { id: true, status: true },
+        },
       },
-    },
-  });
+    }),
+    prisma.beat.findMany({
+      where: { seriesId: id },
+      orderBy: { order: "asc" },
+      select: { id: true, title: true, summary: true, projectId: true, linkedCardId: true },
+    }),
+  ]);
 
   return (
     <div className="flex flex-1 flex-col gap-8 p-6">
+      <section className="space-y-3">
+        <h2 className="text-sm font-medium text-neutral-500">Series arc</h2>
+        <p className="text-xs text-neutral-400">
+          The franchise-wide shape — big strokes across the whole show, above
+          any one season.
+        </p>
+        <BeatBoard
+          scope={{ seriesId: id }}
+          initialBeats={beats}
+          placeholder="New series beat (e.g. Series premise)…"
+          emptyMessage="No series-level beats yet — sketch the show's overall shape here."
+        />
+      </section>
+
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-neutral-500">
           Seasons ({seasons.length})

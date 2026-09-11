@@ -3,23 +3,28 @@
 import { useState, useTransition } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { updateSeasonBeat, deleteSeasonBeat } from "@/app/actions/season-beats";
+import { updateBeat, deleteBeat } from "@/app/actions/beats";
 
-export type SeasonBeatData = {
+export type BeatData = {
   id: string;
   title: string;
   summary: string | null;
   projectId: string | null;
+  linkedCardId: string | null;
 };
 
-export function SeasonBeatCard({
+export function BeatCard({
   beat,
   number,
-  episodes,
+  episodeOptions,
+  cardOptions,
 }: {
-  beat: SeasonBeatData;
+  beat: BeatData;
   number: number;
-  episodes: { id: string; title: string; episodeNumber: number | null }[];
+  /** Season-scoped beats only: episodes this beat can be assigned to. */
+  episodeOptions?: { id: string; title: string; episodeNumber: number | null }[];
+  /** Project-scoped beats only: outline cards this beat can link to once broken down. */
+  cardOptions?: { id: string; title: string }[];
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: beat.id });
@@ -27,6 +32,7 @@ export function SeasonBeatCard({
   const [title, setTitle] = useState(beat.title);
   const [summary, setSummary] = useState(beat.summary ?? "");
   const [projectId, setProjectId] = useState(beat.projectId ?? "");
+  const [linkedCardId, setLinkedCardId] = useState(beat.linkedCardId ?? "");
   const [isPending, startTransition] = useTransition();
 
   const style = {
@@ -35,14 +41,16 @@ export function SeasonBeatCard({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const linkedEpisode = episodes.find((e) => e.id === beat.projectId);
+  const linkedEpisode = episodeOptions?.find((e) => e.id === beat.projectId);
+  const linkedCard = cardOptions?.find((c) => c.id === beat.linkedCardId);
 
   function save() {
     startTransition(async () => {
-      await updateSeasonBeat(beat.id, {
+      await updateBeat(beat.id, {
         title: title.trim() || "Untitled",
         summary,
-        projectId: projectId || null,
+        ...(episodeOptions ? { projectId: projectId || null } : {}),
+        linkedCardId: linkedCardId || null,
       });
       setEditing(false);
     });
@@ -77,6 +85,9 @@ export function SeasonBeatCard({
                 Episode {linkedEpisode.episodeNumber}: {linkedEpisode.title}
               </p>
             )}
+            {linkedCard && (
+              <p className="text-xs text-neutral-400">→ {linkedCard.title}</p>
+            )}
           </button>
         ) : (
           <input
@@ -102,16 +113,30 @@ export function SeasonBeatCard({
             rows={3}
             className="w-full resize-none rounded border border-neutral-300 px-2 py-1 text-xs outline-none dark:border-neutral-700 dark:bg-neutral-900"
           />
-          {episodes.length > 0 && (
+          {episodeOptions && episodeOptions.length > 0 && (
             <select
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
               className="w-full rounded border border-neutral-300 px-2 py-1 text-xs outline-none dark:border-neutral-700 dark:bg-neutral-900"
             >
               <option value="">Not assigned to an episode</option>
-              {episodes.map((ep) => (
+              {episodeOptions.map((ep) => (
                 <option key={ep.id} value={ep.id}>
                   Episode {ep.episodeNumber}: {ep.title}
+                </option>
+              ))}
+            </select>
+          )}
+          {cardOptions && cardOptions.length > 0 && (
+            <select
+              value={linkedCardId}
+              onChange={(e) => setLinkedCardId(e.target.value)}
+              className="w-full rounded border border-neutral-300 px-2 py-1 text-xs outline-none dark:border-neutral-700 dark:bg-neutral-900"
+            >
+              <option value="">Not broken into a card yet</option>
+              {cardOptions.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.title}
                 </option>
               ))}
             </select>
@@ -120,7 +145,7 @@ export function SeasonBeatCard({
             <button
               onClick={() =>
                 startTransition(async () => {
-                  await deleteSeasonBeat(beat.id);
+                  await deleteBeat(beat.id);
                 })
               }
               className="text-xs text-neutral-400 hover:text-red-600"

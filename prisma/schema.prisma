@@ -46,6 +46,7 @@ model Series {
   characters Character[]
   worldNotes WorldNote[]
   ideas      Idea[]
+  beats      Beat[]
 
   @@index([userId])
 }
@@ -61,25 +62,38 @@ model Season {
 
   episodes Project[]
   ideas    Idea[]
-  beats    SeasonBeat[]
+  beats    Beat[]
 
   @@index([seriesId])
 }
 
-model SeasonBeat {
-  id        String   @id @default(cuid())
-  seasonId  String
-  season    Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
-  title     String
-  summary   String?
-  projectId String?
-  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  order     Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// A lighter-weight, higher-level structural skeleton than OutlineCard (e.g.
+// a Save the Cat-style beat sheet) — scoped to exactly one of a series, a
+// season, or a project/episode, with an optional pointer down to the more
+// granular OutlineCard it's been broken into once that happens.
+model Beat {
+  id           String       @id @default(cuid())
+  seriesId     String?
+  series       Series?      @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  seasonId     String?
+  season       Season?      @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  // Dual purpose, mirroring Idea: the primary scope when series/season are
+  // both null (a beat on a standalone project's or episode's own beat
+  // sheet), or an "assigned to this episode" narrowing when seasonId is set.
+  projectId    String?
+  project      Project?     @relation("BeatProject", fields: [projectId], references: [id], onDelete: SetNull)
+  linkedCardId String?
+  linkedCard   OutlineCard? @relation(fields: [linkedCardId], references: [id], onDelete: SetNull)
+  title        String
+  summary      String?
+  order        Int
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
+  @@index([seriesId])
   @@index([seasonId])
   @@index([projectId])
+  @@index([linkedCardId])
 }
 
 model Project {
@@ -107,7 +121,7 @@ model Project {
   characters    Character[]
   outlineCards  OutlineCard[]
   worldNotes    WorldNote[]
-  seasonBeats   SeasonBeat[]
+  beats         Beat[]        @relation("BeatProject")
   draft         Draft?
 
   @@index([seasonId])
@@ -168,7 +182,8 @@ model OutlineCard {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  characters Character[]
+  characters  Character[]
+  linkedBeats Beat[]
 
   @@index([projectId])
 }

@@ -14,17 +14,33 @@ import {
   arrayMove,
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { SeasonBeatCard, type SeasonBeatData } from "./season-beat-card";
-import { createSeasonBeat, reorderSeasonBeats } from "@/app/actions/season-beats";
+import { BeatCard, type BeatData } from "@/components/beat-card";
+import {
+  createSeriesBeat,
+  createSeasonBeat,
+  createProjectBeat,
+  reorderBeats,
+} from "@/app/actions/beats";
 
-export function SeasonBeatBoard({
-  seasonId,
+type Scope =
+  | { seriesId: string }
+  | { seasonId: string }
+  | { projectId: string };
+
+export function BeatBoard({
+  scope,
   initialBeats,
-  episodes,
+  episodeOptions,
+  cardOptions,
+  placeholder = "New beat…",
+  emptyMessage = "No beats yet.",
 }: {
-  seasonId: string;
-  initialBeats: SeasonBeatData[];
-  episodes: { id: string; title: string; episodeNumber: number | null }[];
+  scope: Scope;
+  initialBeats: BeatData[];
+  episodeOptions?: { id: string; title: string; episodeNumber: number | null }[];
+  cardOptions?: { id: string; title: string }[];
+  placeholder?: string;
+  emptyMessage?: string;
 }) {
   const [beats, setBeats] = useState(initialBeats);
   const [prevInitialBeats, setPrevInitialBeats] = useState(initialBeats);
@@ -38,6 +54,13 @@ export function SeasonBeatBoard({
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
+  const scopeKey =
+    "seriesId" in scope
+      ? `series-${scope.seriesId}`
+      : "seasonId" in scope
+        ? `season-${scope.seasonId}`
+        : `project-${scope.projectId}`;
+
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -47,7 +70,7 @@ export function SeasonBeatBoard({
     const next = arrayMove(beats, oldIndex, newIndex);
     setBeats(next);
     startTransition(async () => {
-      await reorderSeasonBeats(seasonId, next.map((b) => b.id));
+      await reorderBeats(scope, next.map((b) => b.id));
     });
   }
 
@@ -57,7 +80,9 @@ export function SeasonBeatBoard({
     if (!title) return;
     setNewTitle("");
     startTransition(async () => {
-      await createSeasonBeat(seasonId, title);
+      if ("seriesId" in scope) await createSeriesBeat(scope.seriesId, title);
+      else if ("seasonId" in scope) await createSeasonBeat(scope.seasonId, title);
+      else await createProjectBeat(scope.projectId, title);
     });
   }
 
@@ -67,7 +92,7 @@ export function SeasonBeatBoard({
         <input
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
-          placeholder="New season beat (e.g. Midpoint reveal)…"
+          placeholder={placeholder}
           className="flex-1 max-w-sm rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900"
         />
         <button
@@ -80,13 +105,10 @@ export function SeasonBeatBoard({
       </form>
 
       {beats.length === 0 ? (
-        <p className="text-sm text-neutral-500">
-          No season-level beats yet — sketch the season&apos;s shape here
-          before breaking it into episodes.
-        </p>
+        <p className="text-sm text-neutral-500">{emptyMessage}</p>
       ) : (
         <DndContext
-          id={`season-beats-${seasonId}`}
+          id={`beats-${scopeKey}`}
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
@@ -94,11 +116,12 @@ export function SeasonBeatBoard({
           <SortableContext items={beats.map((b) => b.id)} strategy={horizontalListSortingStrategy}>
             <div className="flex items-start gap-3 overflow-x-auto pb-4">
               {beats.map((beat, index) => (
-                <SeasonBeatCard
+                <BeatCard
                   key={beat.id}
                   beat={beat}
                   number={index + 1}
-                  episodes={episodes}
+                  episodeOptions={episodeOptions}
+                  cardOptions={cardOptions}
                 />
               ))}
             </div>

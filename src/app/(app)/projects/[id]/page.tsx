@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getProjectOrNotFound } from "@/lib/get-project";
 import { OutlineBoard } from "@/components/outline-board";
+import { BeatBoard } from "@/components/beat-board";
 import { listScenes, type DraftContent } from "@/lib/draft-content";
 
 export default async function OutlinePage({
@@ -18,7 +19,7 @@ export default async function OutlinePage({
       })
     : null;
 
-  const [cards, characters, draft] = await Promise.all([
+  const [cards, characters, draft, beats] = await Promise.all([
     prisma.outlineCard.findMany({
       where: { projectId: id },
       orderBy: { order: "asc" },
@@ -46,19 +47,39 @@ export default async function OutlinePage({
       where: { projectId: id },
       select: { content: true },
     }),
+    prisma.beat.findMany({
+      where: { projectId: id, seasonId: null, seriesId: null },
+      orderBy: { order: "asc" },
+      select: { id: true, title: true, summary: true, projectId: true, linkedCardId: true },
+    }),
   ]);
 
   const availableScenes = draft
     ? listScenes(draft.content as unknown as DraftContent)
     : [];
 
+  const cardOptions = cards.map((c) => ({ id: c.id, title: c.title }));
+
   return (
-    <OutlineBoard
-      key={id}
-      projectId={id}
-      initialCards={cards}
-      availableCharacters={characters}
-      availableScenes={availableScenes}
-    />
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <section className="space-y-3 border-b border-neutral-200 p-6 pb-6 dark:border-neutral-800">
+        <h3 className="text-sm font-medium text-neutral-500">Beats</h3>
+        <BeatBoard
+          key={id}
+          scope={{ projectId: id }}
+          initialBeats={beats}
+          cardOptions={cardOptions}
+          placeholder="New beat (e.g. Opening image)…"
+          emptyMessage="No beats yet — sketch the high-level shape here before breaking it into scenes below."
+        />
+      </section>
+      <OutlineBoard
+        key={id}
+        projectId={id}
+        initialCards={cards}
+        availableCharacters={characters}
+        availableScenes={availableScenes}
+      />
+    </div>
   );
 }
