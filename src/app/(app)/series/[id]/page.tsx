@@ -4,6 +4,7 @@ import { getSeriesOrNotFound } from "@/lib/get-series";
 import { SeriesMetaForm } from "./series-meta-form";
 import { NewSeasonForm } from "./new-season-form";
 import { BeatBoard } from "@/components/beat-board";
+import { ReferenceList } from "@/components/reference-list";
 
 export default async function SeriesOverviewPage({
   params,
@@ -13,7 +14,7 @@ export default async function SeriesOverviewPage({
   const { id } = await params;
   const series = await getSeriesOrNotFound(id);
 
-  const [seasons, beats] = await Promise.all([
+  const [seasons, beats, references] = await Promise.all([
     prisma.season.findMany({
       where: { seriesId: id },
       orderBy: { number: "asc" },
@@ -26,7 +27,22 @@ export default async function SeriesOverviewPage({
     prisma.beat.findMany({
       where: { seriesId: id },
       orderBy: { order: "asc" },
-      select: { id: true, title: true, summary: true, projectId: true, linkedCardId: true },
+      select: {
+        id: true,
+        title: true,
+        summary: true,
+        projectId: true,
+        linkedCardId: true,
+        references: {
+          orderBy: { createdAt: "asc" },
+          select: { id: true, kind: true, url: true, label: true, note: true, fileType: true },
+        },
+      },
+    }),
+    prisma.reference.findMany({
+      where: { seriesId: id },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, kind: true, url: true, label: true, note: true, fileType: true },
     }),
   ]);
 
@@ -44,6 +60,14 @@ export default async function SeriesOverviewPage({
           placeholder="New series beat (e.g. Series premise)…"
           emptyMessage="No series-level beats yet — sketch the show's overall shape here."
         />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-medium text-neutral-500">Moodboard</h2>
+        <p className="text-xs text-neutral-400">
+          Reference links, songs, and images for the show as a whole.
+        </p>
+        <ReferenceList scope={{ seriesId: id }} initialReferences={references} />
       </section>
 
       <section className="space-y-3">

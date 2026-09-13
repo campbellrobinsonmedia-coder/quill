@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { updateCharacter, deleteCharacter } from "@/app/actions/characters";
+import { ReferenceList, type ReferenceData } from "@/components/reference-list";
 
 export type CharacterData = {
   id: string;
@@ -9,6 +10,7 @@ export type CharacterData = {
   description: string | null;
   arcNotes: string | null;
   relationships: string | null;
+  references?: ReferenceData[];
 };
 
 export function CharacterItem({ character }: { character: CharacterData }) {
@@ -60,6 +62,12 @@ export function CharacterItem({ character }: { character: CharacterData }) {
             {character.relationships}
           </p>
         )}
+        <div className="mt-3 border-t border-neutral-100 pt-2 dark:border-neutral-800">
+          <ReferenceList
+            scope={{ characterId: character.id }}
+            initialReferences={character.references ?? []}
+          />
+        </div>
       </div>
     );
   }

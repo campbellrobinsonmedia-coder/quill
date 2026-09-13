@@ -13,14 +13,25 @@ export default async function SeriesBiblePage({
   const { id } = await params;
   await getSeriesOrNotFound(id);
 
+  const referenceSelect = {
+    id: true,
+    kind: true,
+    url: true,
+    label: true,
+    note: true,
+    fileType: true,
+  } as const;
+
   const [characters, worldNotes] = await Promise.all([
     prisma.character.findMany({
       where: { seriesId: id },
       orderBy: { createdAt: "asc" },
+      include: { references: { orderBy: { createdAt: "asc" }, select: referenceSelect } },
     }),
     prisma.worldNote.findMany({
       where: { seriesId: id },
       orderBy: { createdAt: "asc" },
+      include: { references: { orderBy: { createdAt: "asc" }, select: referenceSelect } },
     }),
   ]);
 

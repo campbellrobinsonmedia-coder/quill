@@ -50,7 +50,17 @@ export default async function OutlinePage({
     prisma.beat.findMany({
       where: { projectId: id, seasonId: null, seriesId: null },
       orderBy: { order: "asc" },
-      select: { id: true, title: true, summary: true, projectId: true, linkedCardId: true },
+      select: {
+        id: true,
+        title: true,
+        summary: true,
+        projectId: true,
+        linkedCardId: true,
+        references: {
+          orderBy: { createdAt: "asc" },
+          select: { id: true, kind: true, url: true, label: true, note: true, fileType: true },
+        },
+      },
     }),
   ]);
 

@@ -5,6 +5,7 @@ import { templateLabel } from "@/lib/format-templates";
 import { NewEpisodeForm } from "./new-episode-form";
 import { NewSeasonIdeaForm } from "./new-season-idea-form";
 import { BeatBoard } from "@/components/beat-board";
+import { ReferenceList } from "@/components/reference-list";
 import { deleteIdea } from "@/app/actions/ideas";
 
 type EpisodeStatus = "Idea" | "Outlined" | "Drafted" | "Locked";
@@ -34,7 +35,7 @@ export default async function SeasonBoardPage({
   const { id, seasonId } = await params;
   const season = await getSeasonOrNotFound(seasonId);
 
-  const [episodes, ideas, beats] = await Promise.all([
+  const [episodes, ideas, beats, references] = await Promise.all([
     prisma.project.findMany({
       where: { seasonId },
       orderBy: { episodeNumber: "asc" },
@@ -51,7 +52,22 @@ export default async function SeasonBoardPage({
     prisma.beat.findMany({
       where: { seasonId },
       orderBy: { order: "asc" },
-      select: { id: true, title: true, summary: true, projectId: true, linkedCardId: true },
+      select: {
+        id: true,
+        title: true,
+        summary: true,
+        projectId: true,
+        linkedCardId: true,
+        references: {
+          orderBy: { createdAt: "asc" },
+          select: { id: true, kind: true, url: true, label: true, note: true, fileType: true },
+        },
+      },
+    }),
+    prisma.reference.findMany({
+      where: { seasonId },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, kind: true, url: true, label: true, note: true, fileType: true },
     }),
   ]);
 
@@ -103,6 +119,11 @@ export default async function SeasonBoardPage({
           placeholder="New season beat (e.g. Midpoint reveal)…"
           emptyMessage="No season-level beats yet — sketch the season's shape here before breaking it into episodes."
         />
+      </section>
+
+      <section className="space-y-3 border-b border-neutral-200 pb-6 dark:border-neutral-800">
+        <h3 className="text-sm font-medium text-neutral-500">Moodboard</h3>
+        <ReferenceList scope={{ seasonId }} initialReferences={references} />
       </section>
 
       <NewEpisodeForm seasonId={seasonId} />

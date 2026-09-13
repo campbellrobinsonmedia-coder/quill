@@ -22,6 +22,12 @@ export default async function WorldPage({
   const notes = await prisma.worldNote.findMany({
     where: { projectId: id },
     orderBy: { createdAt: "asc" },
+    include: {
+      references: {
+        orderBy: { createdAt: "asc" },
+        select: { id: true, kind: true, url: true, label: true, note: true, fileType: true },
+      },
+    },
   });
 
   return (

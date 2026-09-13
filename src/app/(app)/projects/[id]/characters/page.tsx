@@ -22,6 +22,12 @@ export default async function CharactersPage({
   const characters = await prisma.character.findMany({
     where: { projectId: id },
     orderBy: { createdAt: "asc" },
+    include: {
+      references: {
+        orderBy: { createdAt: "asc" },
+        select: { id: true, kind: true, url: true, label: true, note: true, fileType: true },
+      },
+    },
   });
 
   return (

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { updateBeat, deleteBeat } from "@/app/actions/beats";
+import { ReferenceList, type ReferenceData } from "@/components/reference-list";
 
 export type BeatData = {
   id: string;
@@ -11,6 +12,7 @@ export type BeatData = {
   summary: string | null;
   projectId: string | null;
   linkedCardId: string | null;
+  references?: ReferenceData[];
 };
 
 export function BeatCard({
@@ -99,11 +101,17 @@ export function BeatCard({
       </div>
 
       {!editing ? (
-        beat.summary && (
-          <p className="whitespace-pre-wrap text-xs text-neutral-500 line-clamp-4">
-            {beat.summary}
-          </p>
-        )
+        <>
+          {beat.summary && (
+            <p className="whitespace-pre-wrap text-xs text-neutral-500 line-clamp-4">
+              {beat.summary}
+            </p>
+          )}
+          <ReferenceList
+            scope={{ beatId: beat.id }}
+            initialReferences={beat.references ?? []}
+          />
+        </>
       ) : (
         <div className="space-y-2">
           <textarea

@@ -47,6 +47,7 @@ model Series {
   worldNotes WorldNote[]
   ideas      Idea[]
   beats      Beat[]
+  references Reference[]
 
   @@index([userId])
 }
@@ -60,9 +61,10 @@ model Season {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  episodes Project[]
-  ideas    Idea[]
-  beats    Beat[]
+  episodes   Project[]
+  ideas      Idea[]
+  beats      Beat[]
+  references Reference[]
 
   @@index([seriesId])
 }
@@ -89,6 +91,8 @@ model Beat {
   order        Int
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+
+  references Reference[]
 
   @@index([seriesId])
   @@index([seasonId])
@@ -161,6 +165,7 @@ model Character {
   updatedAt     DateTime @updatedAt
 
   outlineCards OutlineCard[]
+  references   Reference[]
 
   @@index([projectId])
   @@index([seriesId])
@@ -200,8 +205,47 @@ model WorldNote {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  references Reference[]
+
   @@index([projectId])
   @@index([seriesId])
+}
+
+enum ReferenceKind {
+  LINK
+  FILE
+}
+
+// A pinned snippet — a link (song, article, video, Pinterest board) or an
+// uploaded file (image, audio, PDF) — attached to exactly one of a world
+// note, series, season, beat, or character. Files are stored in Vercel Blob;
+// `url` holds the external URL for links and the Blob URL for files.
+model Reference {
+  id          String        @id @default(cuid())
+  worldNoteId String?
+  worldNote   WorldNote?    @relation(fields: [worldNoteId], references: [id], onDelete: Cascade)
+  seriesId    String?
+  series      Series?       @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  seasonId    String?
+  season      Season?       @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  beatId      String?
+  beat        Beat?         @relation(fields: [beatId], references: [id], onDelete: Cascade)
+  characterId String?
+  character   Character?    @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  kind        ReferenceKind
+  url         String
+  label       String
+  note        String?
+  fileType    String?
+  fileSize    Int?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([worldNoteId])
+  @@index([seriesId])
+  @@index([seasonId])
+  @@index([beatId])
+  @@index([characterId])
 }
 
 model Draft {

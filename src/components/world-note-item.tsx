@@ -2,12 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { updateWorldNote, deleteWorldNote } from "@/app/actions/world-notes";
+import { ReferenceList, type ReferenceData } from "@/components/reference-list";
 
 export type WorldNoteData = {
   id: string;
   title: string;
   category: string | null;
   description: string | null;
+  references?: ReferenceData[];
 };
 
 const CATEGORY_SUGGESTIONS = ["Location", "Object", "Lore", "Rule", "Faction"];
@@ -52,6 +54,12 @@ export function WorldNoteItem({ note }: { note: WorldNoteData }) {
             {note.description}
           </p>
         )}
+        <div className="mt-3 border-t border-neutral-100 pt-2 dark:border-neutral-800">
+          <ReferenceList
+            scope={{ worldNoteId: note.id }}
+            initialReferences={note.references ?? []}
+          />
+        </div>
       </div>
     );
   }
