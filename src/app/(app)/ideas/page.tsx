@@ -17,6 +17,8 @@ export default async function IdeasPage({
       where: {
         userId,
         projectId: null,
+        seriesId: null,
+        seasonId: null,
         ...(q ? { content: { contains: q, mode: "insensitive" } } : {}),
       },
       orderBy: { createdAt: "desc" },
@@ -29,7 +31,7 @@ export default async function IdeasPage({
   ]);
 
   return (
-    <div className="mx-auto w-full max-w-2xl flex-1 space-y-6 p-6">
+    <div className="mx-auto w-full max-w-2xl flex-1 space-y-6 p-4 sm:p-6">
       <div className="space-y-1">
         <h1 className="text-lg font-semibold">General ideas</h1>
         <p className="text-sm text-neutral-500">

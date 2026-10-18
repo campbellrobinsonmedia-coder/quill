@@ -24,3 +24,24 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Visible keyboard focus on interactive controls; text fields already show
+   a focus border, and the editor lines shouldn't get a ring per line. */
+:is(a, button, summary, select, [role="button"], input[type="checkbox"], input[type="radio"], input[type="file"]):focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.dark :is(a, button, summary, select, [role="button"], input[type="checkbox"], input[type="radio"], input[type="file"]):focus-visible {
+  outline-color: #60a5fa;
+}
+
+/* iOS Safari zooms the page when a focused field's font is under 16px, so
+   keep fields at 16px on phones instead of blocking pinch-zoom. */
+@media (max-width: 640px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}

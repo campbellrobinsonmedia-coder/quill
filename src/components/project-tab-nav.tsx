@@ -18,7 +18,7 @@ export function ProjectTabNav({ projectId }: { projectId: string }) {
 
   return (
     <div className="relative border-b border-neutral-200 dark:border-neutral-800">
-      <nav className="flex gap-1 overflow-x-auto px-6 text-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <nav className="flex gap-1 overflow-x-auto px-4 text-sm sm:px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {tabs.map((tab) => {
           const isActive =
             tab.href === base ? pathname === base : pathname.startsWith(tab.href);

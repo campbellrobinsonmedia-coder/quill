@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { deleteIdea, updateIdeaScope } from "@/app/actions/ideas";
+import { useToast } from "@/components/toast";
 
 type SeasonWithEpisodes = {
   id: string;
@@ -26,6 +27,7 @@ export function SeriesIdeaItem({
   seasons: SeasonWithEpisodes[];
 }) {
   const [isPending, startTransition] = useTransition();
+  const toast = useToast();
   const [localSeasonId, setLocalSeasonId] = useState(seasonId ?? "");
   const [localProjectId, setLocalProjectId] = useState(projectId ?? "");
 
@@ -33,10 +35,15 @@ export function SeriesIdeaItem({
 
   function applyScope(nextSeasonId: string, nextProjectId: string) {
     startTransition(async () => {
-      await updateIdeaScope(id, {
-        seasonId: nextSeasonId || null,
-        projectId: nextProjectId || null,
-      });
+      try {
+        await updateIdeaScope(id, {
+          seasonId: nextSeasonId || null,
+          projectId: nextProjectId || null,
+        });
+        toast.success("Idea moved");
+      } catch {
+        toast.error("Couldn't move that idea — try again");
+      }
     });
   }
 
@@ -61,14 +68,24 @@ export function SeriesIdeaItem({
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <p className="whitespace-pre-wrap text-sm">{content}</p>
-          <p className="mt-1 text-xs text-neutral-400">
+          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
             {createdAt} · {scopeLabel}
           </p>
         </div>
         <button
           disabled={isPending}
-          onClick={() => startTransition(async () => { await deleteIdea(id); })}
-          className="shrink-0 text-xs text-neutral-400 hover:text-red-600 disabled:opacity-60"
+          onClick={() => {
+            if (!window.confirm("Delete this idea?")) return;
+            startTransition(async () => {
+              try {
+                await deleteIdea(id);
+                toast.success("Idea deleted");
+              } catch {
+                toast.error("Couldn't delete — try again");
+              }
+            });
+          }}
+          className="shrink-0 text-xs text-neutral-500 dark:text-neutral-400 hover:text-red-600 disabled:opacity-60"
         >
           Delete
         </button>

@@ -10,7 +10,7 @@ export default async function ProjectSettingsPage({
   const project = await getProjectOrNotFound(id);
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-6">
+    <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
       <ProjectSettingsForm
         projectId={id}
         isEpisode={Boolean(project.seasonId)}

@@ -115,16 +115,37 @@ export const CHANGELOG: ChangelogRelease[] = [
     title: "App changelog",
     items: ["This page — a running history of what's shipped and what's next"],
   },
+  {
+    version: "v12",
+    title: "Settings, beats & references",
+    items: [
+      "Settings page with light / dark theme toggle (Account and Changelog moved here)",
+      "Beats on series, seasons, and episodes — a lighter beat sheet above the outline cards, linkable to cards and episodes",
+      "References: attach links and uploaded files (images, audio, video, PDF) to characters, world notes, beats, series, and seasons",
+    ],
+  },
+  {
+    version: "v13",
+    title: "Mobile, search & safety pass",
+    items: [
+      "Mobile layout fixes: stacked idea rows, tighter padding, compact header, no more forced zoom lock",
+      "General ideas no longer shows series- or season-level ideas",
+      "Global search across projects, script text, ideas, characters, world notes, beats, and outline cards (press / anywhere)",
+      "Quick-add idea button on every page (press i)",
+      "Daily word goal with progress and streak on the dashboard",
+      "Download-everything JSON backup",
+      "Login rate limiting: 5 wrong PINs per email (or 20 per IP) locks sign-in for 15 minutes",
+      "Confirm-before-delete everywhere, plus saved / failed toasts and loading skeletons",
+      "Keyboard focus rings and higher-contrast secondary text",
+    ],
+  },
 ];
 
 // Not built yet — discussed and agreed as direction, not a fixed commitment.
 export const ROADMAP: string[] = [
-  "Rate limiting on login (close the brute-force gap the PIN recovery flow didn't address)",
   "Wire episode credits into the actual PDF / Fountain / FDX export output",
-  "One-click backup — export every project as a zipped FDX + Fountain bundle",
-  "Global search across projects, characters, and world notes (today search only covers Ideas)",
+  "Backup as a zipped FDX + Fountain bundle, and embedding uploaded files (JSON backup exists today)",
   "Air order vs. production order for episodes",
-  "Daily writing goal / \"did I write today\" indicator",
   "Offline-first drafting (local queue, sync on reconnect)",
   "Read-only, watermarked share links for sending drafts to collaborators",
   "Character relationship map (visual graph)",

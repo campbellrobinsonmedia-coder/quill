@@ -21,14 +21,39 @@ enum ProjectStatus {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  createdAt    DateTime @default(now())
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  createdAt     DateTime @default(now())
+  // Daily writing goal in words; null means no goal set.
+  dailyWordGoal Int?
 
-  projects Project[]
-  ideas    Idea[]
-  series   Series[]
+  projects    Project[]
+  ideas       Idea[]
+  series      Series[]
+  writingDays WritingDay[]
+}
+
+// One row per failed login, keyed by "email:<addr>" or "ip:<addr>", used to
+// throttle PIN guessing. Rows are pruned as they age out of the window.
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  key       String
+  createdAt DateTime @default(now())
+
+  @@index([key, createdAt])
+}
+
+// Words written on a given local calendar day (date is "YYYY-MM-DD" in the
+// writer's own timezone), accumulated from positive draft word-count deltas.
+model WritingDay {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date   String
+  words  Int    @default(0)
+
+  @@unique([userId, date])
 }
 
 model Series {
@@ -121,12 +146,12 @@ model Project {
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
-  ideas         Idea[]
-  characters    Character[]
-  outlineCards  OutlineCard[]
-  worldNotes    WorldNote[]
-  beats         Beat[]        @relation("BeatProject")
-  draft         Draft?
+  ideas        Idea[]
+  characters   Character[]
+  outlineCards OutlineCard[]
+  worldNotes   WorldNote[]
+  beats        Beat[]        @relation("BeatProject")
+  draft        Draft?
 
   @@index([seasonId])
 }
@@ -172,15 +197,15 @@ model Character {
 }
 
 model OutlineCard {
-  id          String   @id @default(cuid())
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  title       String
-  summary     String?
-  colorTag    String?
-  act         String?
-  location    String?
-  emotion     String?
+  id            String   @id @default(cuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title         String
+  summary       String?
+  colorTag      String?
+  act           String?
+  location      String?
+  emotion       String?
   storyThread   String?
   linkedSceneId String?
   order         Int

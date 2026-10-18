@@ -363,7 +363,7 @@ export function ScreenplayEditor({
                 key={c.id}
                 className={`mb-2 rounded border p-1.5 ${
                   c.resolved
-                    ? "border-neutral-100 text-neutral-400 line-through dark:border-neutral-800"
+                    ? "border-neutral-100 text-neutral-500 dark:text-neutral-400 line-through dark:border-neutral-800"
                     : "border-neutral-200 dark:border-neutral-700"
                 }`}
               >
@@ -413,7 +413,7 @@ export function ScreenplayEditor({
       <div key={el.id} className="group relative">
         {el.type === "scene_heading" && (
           <span
-            className="absolute -left-10 select-none text-[10px] text-neutral-400"
+            className="absolute -left-10 select-none text-[10px] text-neutral-500 dark:text-neutral-400"
             style={{ fontFamily: "system-ui, sans-serif" }}
           >
             {sceneNumbers.get(el.id)}
@@ -421,7 +421,7 @@ export function ScreenplayEditor({
         )}
         {isRevised(el) && (
           <span
-            className="absolute -right-3 select-none text-neutral-400"
+            className="absolute -right-3 select-none text-neutral-500 dark:text-neutral-400"
             style={{ fontFamily: "system-ui, sans-serif" }}
           >
             *
@@ -478,18 +478,18 @@ export function ScreenplayEditor({
         nodes.push(
           <div key={el.id} className="group relative flex items-center gap-2">
             <span
-              className="select-none text-[10px] text-neutral-400"
+              className="select-none text-[10px] text-neutral-500 dark:text-neutral-400"
               style={{ fontFamily: "system-ui, sans-serif" }}
             >
               {sceneNumbers.get(el.id)}
             </span>
-            <p className="text-neutral-400 line-through">
+            <p className="text-neutral-500 dark:text-neutral-400 line-through">
               {el.text || ELEMENT_LABELS.scene_heading} — OMITTED
             </p>
             <button
               type="button"
               onClick={() => toggleOmitted(i)}
-              className="px-1 py-1 text-xs text-neutral-400 opacity-40 hover:text-neutral-700 group-hover:opacity-100 group-focus-within:opacity-100"
+              className="px-1 py-1 text-xs text-neutral-500 dark:text-neutral-400 opacity-40 hover:text-neutral-700 group-hover:opacity-100 group-focus-within:opacity-100"
               style={{ fontFamily: "system-ui, sans-serif" }}
             >
               Restore
@@ -521,7 +521,7 @@ export function ScreenplayEditor({
                 <button
                   type="button"
                   onClick={() => unpairDualDialogue(el.dualGroup as string)}
-                  className="text-[10px] text-neutral-400 hover:text-neutral-700"
+                  className="text-[10px] text-neutral-500 dark:text-neutral-400 hover:text-neutral-700"
                   style={{ fontFamily: "system-ui, sans-serif" }}
                 >
                   Unpair dual dialogue

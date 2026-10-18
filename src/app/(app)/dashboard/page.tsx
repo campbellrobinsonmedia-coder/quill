@@ -9,6 +9,7 @@ import { NewSeriesForm } from "../series/new-series-form";
 import { DeleteProjectButton } from "./delete-project-button";
 import { DeleteSeriesButton } from "./delete-series-button";
 import { CollapsibleSection } from "@/components/collapsible-section";
+import { WritingGoalCard } from "@/components/writing-goal-card";
 
 type ListItem = {
   kind: "script" | "series";
@@ -98,7 +99,7 @@ export default async function DashboardPage() {
     : undefined;
 
   return (
-    <div className="mx-auto w-full max-w-3xl flex-1 space-y-10 p-6">
+    <div className="mx-auto w-full max-w-3xl flex-1 space-y-10 p-4 sm:p-6">
       {mostRecentDraft && (
         <section>
           <Link
@@ -122,6 +123,8 @@ export default async function DashboardPage() {
           </Link>
         </section>
       )}
+
+      <WritingGoalCard userId={userId} />
 
       <section className="flex gap-3">
         <CollapsibleSection label="New script">

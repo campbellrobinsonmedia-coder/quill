@@ -7,6 +7,7 @@ import { NewSeasonIdeaForm } from "./new-season-idea-form";
 import { BeatBoard } from "@/components/beat-board";
 import { ReferenceList } from "@/components/reference-list";
 import { deleteIdea } from "@/app/actions/ideas";
+import { DeleteButton } from "@/components/delete-button";
 
 type EpisodeStatus = "Idea" | "Outlined" | "Drafted" | "Locked";
 
@@ -78,7 +79,7 @@ export default async function SeasonBoardPage({
   }));
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
       <div className="flex items-center gap-2 text-sm">
         <Link href={`/series/${id}`} className="text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100">
           ← {season.series.title}
@@ -147,7 +148,7 @@ export default async function SeasonBoardPage({
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-medium tabular-nums text-neutral-400">
+                  <p className="text-xs font-medium tabular-nums text-neutral-500 dark:text-neutral-400">
                     Episode {ep.episodeNumber}
                   </p>
                   <span
@@ -162,7 +163,7 @@ export default async function SeasonBoardPage({
                 {ep.logline && (
                   <p className="line-clamp-2 text-sm text-neutral-500">{ep.logline}</p>
                 )}
-                <p className="mt-1 text-xs text-neutral-400">
+                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
                   {templateLabel(ep.formatTemplate)}
                 </p>
               </Link>
@@ -190,25 +191,19 @@ export default async function SeasonBoardPage({
               <li key={idea.id} className="flex items-start justify-between gap-4 p-3">
                 <div className="min-w-0 flex-1">
                   <p className="whitespace-pre-wrap text-sm">{idea.content}</p>
-                  <p className="mt-1 text-xs text-neutral-400">
+                  <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
                     {idea.project
                       ? `Episode ${idea.project.episodeNumber}: ${idea.project.title}`
                       : "Whole season"}
                   </p>
                 </div>
-                <form
-                  action={async () => {
+                <DeleteButton
+                  confirmMessage="Delete this idea?"
+                  onDelete={async () => {
                     "use server";
                     await deleteIdea(idea.id);
                   }}
-                >
-                  <button
-                    type="submit"
-                    className="shrink-0 text-xs text-neutral-400 hover:text-red-600"
-                  >
-                    Delete
-                  </button>
-                </form>
+                />
               </li>
             ))}
           </ul>

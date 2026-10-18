@@ -13,7 +13,7 @@ export function SeriesTabNav({ seriesId }: { seriesId: string }) {
   ];
 
   return (
-    <nav className="flex gap-1 border-b border-neutral-200 px-6 text-sm dark:border-neutral-800">
+    <nav className="flex gap-1 overflow-x-auto border-b border-neutral-200 px-4 text-sm sm:px-6 dark:border-neutral-800">
       {tabs.map((tab) => {
         const isActive =
           tab.href === base ? pathname === base : pathname.startsWith(tab.href);
@@ -21,7 +21,7 @@ export function SeriesTabNav({ seriesId }: { seriesId: string }) {
           <Link
             key={tab.href}
             href={tab.href}
-            className={`border-b-2 px-3 py-3 -mb-px ${
+            className={`shrink-0 border-b-2 px-3 py-3 -mb-px ${
               isActive
                 ? "border-neutral-900 font-medium dark:border-white"
                 : "border-transparent text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"

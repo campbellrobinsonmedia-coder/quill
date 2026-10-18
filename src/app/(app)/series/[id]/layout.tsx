@@ -13,7 +13,7 @@ export default async function SeriesLayout({
 
   return (
     <div className="flex min-w-0 flex-1 flex-col">
-      <div className="px-6 py-4">
+      <div className="px-4 py-4 sm:px-6">
         <p className="text-xs text-neutral-500">
           {series.format ? series.format : "Series"}
         </p>

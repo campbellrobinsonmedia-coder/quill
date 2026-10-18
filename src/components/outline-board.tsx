@@ -64,7 +64,7 @@ export function OutlineBoard({
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 overflow-hidden p-6">
+    <div className="flex flex-1 flex-col gap-4 overflow-hidden p-4 sm:p-6">
       <form onSubmit={handleAdd} className="flex shrink-0 gap-2">
         <input
           value={newTitle}
@@ -87,7 +87,7 @@ export function OutlineBoard({
         </p>
       ) : (
         <>
-          <p className="shrink-0 text-xs text-neutral-400">
+          <p className="shrink-0 text-xs text-neutral-500 dark:text-neutral-400">
             {cards.length} card{cards.length === 1 ? "" : "s"} · left to right is story order · drag to reorder
           </p>
           <DndContext

@@ -20,7 +20,7 @@ export default async function ReportsPage({
 
   if (!content || content.type !== "screenplay") {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <p className="text-sm text-neutral-500">
           Reports are available for screenplay-format projects once you have
           scenes written.
@@ -34,7 +34,7 @@ export default async function ReportsPage({
   const characterRows = buildCharacterReport(content, sceneRows);
 
   return (
-    <div className="flex flex-1 flex-col gap-10 p-6">
+    <div className="flex flex-1 flex-col gap-10 p-4 sm:p-6">
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-neutral-500">
           Characters ({characterRows.length})
@@ -126,7 +126,7 @@ export default async function ReportsPage({
             </thead>
             <tbody className="divide-y divide-neutral-100 dark:divide-neutral-900">
               {sceneRows.map((s) => (
-                <tr key={s.number} className={s.omitted ? "text-neutral-400 line-through" : ""}>
+                <tr key={s.number} className={s.omitted ? "text-neutral-500 dark:text-neutral-400 line-through" : ""}>
                   <td className="px-3 py-2">{s.number}</td>
                   <td className="px-3 py-2 font-medium">
                     {s.prefix} {s.location}

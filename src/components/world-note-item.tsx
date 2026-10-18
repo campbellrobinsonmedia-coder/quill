@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useToast } from "@/components/toast";
 import { updateWorldNote, deleteWorldNote } from "@/app/actions/world-notes";
 import { ReferenceList, type ReferenceData } from "@/components/reference-list";
 
@@ -20,6 +21,7 @@ export function WorldNoteItem({ note }: { note: WorldNoteData }) {
   const [category, setCategory] = useState(note.category ?? "");
   const [description, setDescription] = useState(note.description ?? "");
   const [isPending, startTransition] = useTransition();
+  const toast = useToast();
 
   function save() {
     startTransition(async () => {
@@ -39,7 +41,7 @@ export function WorldNoteItem({ note }: { note: WorldNoteData }) {
           <div>
             <h3 className="font-medium">{note.title}</h3>
             {note.category && (
-              <p className="text-xs text-neutral-400">{note.category}</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">{note.category}</p>
             )}
           </div>
           <button
@@ -93,12 +95,18 @@ export function WorldNoteItem({ note }: { note: WorldNoteData }) {
       />
       <div className="flex justify-between pt-1">
         <button
-          onClick={() =>
+          onClick={() => {
+            if (!window.confirm("Delete this world note and its references?")) return;
             startTransition(async () => {
-              await deleteWorldNote(note.id);
-            })
-          }
-          className="text-xs text-neutral-400 hover:text-red-600"
+              try {
+                await deleteWorldNote(note.id);
+                toast.success("World note deleted");
+              } catch {
+                toast.error("Couldn't delete — try again");
+              }
+            });
+          }}
+          className="text-xs text-neutral-500 dark:text-neutral-400 hover:text-red-600"
         >
           Delete
         </button>

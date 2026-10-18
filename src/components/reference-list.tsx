@@ -7,6 +7,7 @@ import {
   deleteReference,
   type ReferenceScope,
 } from "@/app/actions/references";
+import { useToast } from "@/components/toast";
 
 export type ReferenceData = {
   id: string;
@@ -44,6 +45,7 @@ export function ReferenceList({
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const toast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function reset() {
@@ -61,6 +63,7 @@ export function ReferenceList({
       try {
         await createLinkReference(scope, { url, label, note: note || undefined });
         reset();
+        toast.success("Link added");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Couldn't add that link");
       }
@@ -75,6 +78,7 @@ export function ReferenceList({
       try {
         await createFileReference(scope, formData);
         reset();
+        toast.success("File uploaded");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Couldn't upload that file");
       }
@@ -97,17 +101,23 @@ export function ReferenceList({
                 <span className="min-w-0">
                   <span className="block truncate">{ref.label}</span>
                   {ref.note && (
-                    <span className="block truncate text-neutral-400">{ref.note}</span>
+                    <span className="block truncate text-neutral-500 dark:text-neutral-400">{ref.note}</span>
                   )}
                 </span>
               </a>
               <button
-                onClick={() =>
+                onClick={() => {
+                  if (!window.confirm(`Remove “${ref.label}”?`)) return;
                   startTransition(async () => {
-                    await deleteReference(ref.id);
-                  })
-                }
-                className="shrink-0 text-neutral-300 hover:text-red-600 dark:text-neutral-700"
+                    try {
+                      await deleteReference(ref.id);
+                      toast.success("Reference removed");
+                    } catch {
+                      toast.error("Couldn't remove it — try again");
+                    }
+                  });
+                }}
+                className="shrink-0 text-neutral-500 hover:text-red-600"
               >
                 Delete
               </button>
@@ -191,7 +201,7 @@ export function ReferenceList({
             placeholder="Note (optional)"
             className="w-full rounded border border-neutral-300 px-2 py-1 text-xs outline-none dark:border-neutral-700 dark:bg-neutral-900"
           />
-          <p className="text-neutral-400">Images, audio, video, or PDF — up to 20MB.</p>
+          <p className="text-neutral-500 dark:text-neutral-400">Images, audio, video, or PDF — up to 20MB.</p>
           {error && <p className="text-red-600">{error}</p>}
           <div className="flex justify-end gap-2">
             <button type="button" onClick={reset} className="text-xs text-neutral-500">

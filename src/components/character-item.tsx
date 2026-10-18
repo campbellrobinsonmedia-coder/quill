@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useToast } from "@/components/toast";
 import { updateCharacter, deleteCharacter } from "@/app/actions/characters";
 import { ReferenceList, type ReferenceData } from "@/components/reference-list";
 
@@ -20,6 +21,7 @@ export function CharacterItem({ character }: { character: CharacterData }) {
   const [arcNotes, setArcNotes] = useState(character.arcNotes ?? "");
   const [relationships, setRelationships] = useState(character.relationships ?? "");
   const [isPending, startTransition] = useTransition();
+  const toast = useToast();
 
   function save() {
     startTransition(async () => {
@@ -103,12 +105,18 @@ export function CharacterItem({ character }: { character: CharacterData }) {
       />
       <div className="flex justify-between pt-1">
         <button
-          onClick={() =>
+          onClick={() => {
+            if (!window.confirm("Delete this character and their references?")) return;
             startTransition(async () => {
-              await deleteCharacter(character.id);
-            })
-          }
-          className="text-xs text-neutral-400 hover:text-red-600"
+              try {
+                await deleteCharacter(character.id);
+                toast.success("Character deleted");
+              } catch {
+                toast.error("Couldn't delete — try again");
+              }
+            });
+          }}
+          className="text-xs text-neutral-500 dark:text-neutral-400 hover:text-red-600"
         >
           Delete
         </button>

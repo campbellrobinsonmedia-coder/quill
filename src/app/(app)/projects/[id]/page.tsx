@@ -72,7 +72,7 @@ export default async function OutlinePage({
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <section className="space-y-3 border-b border-neutral-200 p-6 pb-6 dark:border-neutral-800">
+      <section className="space-y-3 border-b border-neutral-200 p-4 pb-6 sm:p-6 dark:border-neutral-800">
         <h3 className="text-sm font-medium text-neutral-500">Beats</h3>
         <BeatBoard
           key={id}

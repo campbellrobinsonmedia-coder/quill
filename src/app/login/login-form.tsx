@@ -19,7 +19,11 @@ export function LoginForm() {
         redirect: false,
       });
       if (res?.error) {
-        setError("Incorrect email or PIN");
+        setError(
+          res.code === "too_many_attempts"
+            ? "Too many failed attempts. Try again in 15 minutes."
+            : "Incorrect email or PIN"
+        );
         return;
       }
       router.push(searchParams.get("callbackUrl") || "/dashboard");

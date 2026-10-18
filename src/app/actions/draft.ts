@@ -11,6 +11,7 @@ import {
 } from "@/lib/draft-content";
 import { nextRevisionColor } from "@/lib/revision-colors";
 import { fromFDX } from "@/lib/fdx";
+import { localDateString } from "@/lib/writing-day";
 import type { Prisma } from "@/generated/prisma/client";
 
 async function getOwnedDraft(userId: string, projectId: string) {
@@ -25,13 +26,24 @@ export async function saveDraft(projectId: string, content: DraftContent) {
   const userId = await requireUserId();
   const draft = await getOwnedDraft(userId, projectId);
 
+  const wordCount = countWords(content);
   await prisma.draft.update({
     where: { id: draft.id },
     data: {
       content: content as unknown as Prisma.InputJsonValue,
-      wordCount: countWords(content),
+      wordCount,
     },
   });
+
+  const delta = wordCount - draft.wordCount;
+  if (delta > 0) {
+    const date = await localDateString();
+    await prisma.writingDay.upsert({
+      where: { userId_date: { userId, date } },
+      create: { userId, date, words: delta },
+      update: { words: { increment: delta } },
+    });
+  }
 }
 
 export async function createVersionSnapshot(

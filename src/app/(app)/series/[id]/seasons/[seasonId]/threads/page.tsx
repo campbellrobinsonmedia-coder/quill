@@ -33,7 +33,7 @@ export default async function ThreadMatrixPage({
   ).sort();
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-6">
+    <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
       <div className="flex items-center gap-2 text-sm">
         <Link
           href={`/series/${id}/seasons/${seasonId}`}
@@ -70,7 +70,7 @@ export default async function ThreadMatrixPage({
                   >
                     Ep {ep.episodeNumber}
                     <br />
-                    <span className="font-normal text-neutral-400">
+                    <span className="font-normal text-neutral-500 dark:text-neutral-400">
                       {ep.episodeTitle || ep.title}
                     </span>
                   </th>

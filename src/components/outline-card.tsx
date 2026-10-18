@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useToast } from "@/components/toast";
 import Link from "next/link";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -48,6 +49,7 @@ export function OutlineCard({
     new Set(card.characters.map((c) => c.id))
   );
   const [isPending, startTransition] = useTransition();
+  const toast = useToast();
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -88,7 +90,7 @@ export function OutlineCard({
       className="flex w-64 flex-col gap-2 rounded-md border border-neutral-200 bg-white p-3 shadow-sm dark:border-neutral-800 dark:bg-neutral-900"
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="mt-1.5 shrink-0 text-xs font-medium tabular-nums text-neutral-400">
+        <span className="mt-1.5 shrink-0 text-xs font-medium tabular-nums text-neutral-500 dark:text-neutral-400">
           {number}
         </span>
         <div
@@ -109,7 +111,7 @@ export function OutlineCard({
           >
             <p className="truncate text-sm font-medium">{card.title}</p>
             {(card.act || card.storyThread) && (
-              <p className="text-xs text-neutral-400">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 {[card.act, card.storyThread && `Thread ${card.storyThread}`]
                   .filter(Boolean)
                   .join(" · ")}
@@ -133,7 +135,7 @@ export function OutlineCard({
             </p>
           )}
           {(card.location || card.emotion) && (
-            <p className="text-xs text-neutral-400">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">
               {[card.location, card.emotion].filter(Boolean).join(" · ")}
             </p>
           )}
@@ -259,12 +261,18 @@ export function OutlineCard({
           </div>
           <div className="flex justify-between gap-2 pt-1">
             <button
-              onClick={() =>
+              onClick={() => {
+                if (!window.confirm("Delete this outline card?")) return;
                 startTransition(async () => {
-                  await deleteCard(card.id);
-                })
-              }
-              className="text-xs text-neutral-400 hover:text-red-600"
+                  try {
+                    await deleteCard(card.id);
+                    toast.success("Card deleted");
+                  } catch {
+                    toast.error("Couldn't delete — try again");
+                  }
+                });
+              }}
+              className="text-xs text-neutral-500 dark:text-neutral-400 hover:text-red-600"
             >
               Delete
             </button>

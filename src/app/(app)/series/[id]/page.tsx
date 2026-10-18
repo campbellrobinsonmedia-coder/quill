@@ -47,10 +47,10 @@ export default async function SeriesOverviewPage({
   ]);
 
   return (
-    <div className="flex flex-1 flex-col gap-8 p-6">
+    <div className="flex flex-1 flex-col gap-8 p-4 sm:p-6">
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-neutral-500">Series arc</h2>
-        <p className="text-xs text-neutral-400">
+        <p className="text-xs text-neutral-500 dark:text-neutral-400">
           The franchise-wide shape — big strokes across the whole show, above
           any one season.
         </p>
@@ -64,7 +64,7 @@ export default async function SeriesOverviewPage({
 
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-neutral-500">Moodboard</h2>
-        <p className="text-xs text-neutral-400">
+        <p className="text-xs text-neutral-500 dark:text-neutral-400">
           Reference links, songs, and images for the show as a whole.
         </p>
         <ReferenceList scope={{ seriesId: id }} initialReferences={references} />

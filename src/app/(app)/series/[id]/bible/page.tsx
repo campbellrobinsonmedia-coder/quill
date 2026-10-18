@@ -36,13 +36,13 @@ export default async function SeriesBiblePage({
   ]);
 
   return (
-    <div className="flex flex-1 flex-col gap-10 p-6">
+    <div className="flex flex-1 flex-col gap-10 p-4 sm:p-6">
       <section className="space-y-4">
         <div>
           <h2 className="text-sm font-medium text-neutral-500">
             Recurring characters ({characters.length})
           </h2>
-          <p className="text-xs text-neutral-400">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">
             Shared across every season and episode in this series.
           </p>
         </div>
@@ -65,7 +65,7 @@ export default async function SeriesBiblePage({
           <h2 className="text-sm font-medium text-neutral-500">
             World & continuity notes ({worldNotes.length})
           </h2>
-          <p className="text-xs text-neutral-400">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">
             Standing sets, franchise rules, and lore shared across the series.
           </p>
         </div>
