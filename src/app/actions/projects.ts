@@ -177,7 +177,13 @@ export async function deleteProject(projectId: string) {
     throw new Error("Only archived projects can be deleted");
   }
 
-  await prisma.project.delete({ where: { id: projectId } });
+  // A script's own beats point at it with "set null" (so season-arc beats
+  // assigned to an episode survive), which would strand them unreachable —
+  // delete them with the script.
+  await prisma.$transaction([
+    prisma.beat.deleteMany({ where: { projectId, seasonId: null, seriesId: null } }),
+    prisma.project.delete({ where: { id: projectId } }),
+  ]);
   revalidateShell();
   revalidatePath("/dashboard");
 }

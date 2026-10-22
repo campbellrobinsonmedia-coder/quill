@@ -219,12 +219,22 @@ export const CHANGELOG: ChangelogRelease[] = [
       "(V.O.), (O.S.) and (CONT'D) are now counted as the same character in reports",
     ],
   },
+  {
+    version: "v21",
+    title: "Backup restore",
+    items: [
+      "Settings → Restore from a backup file: pick a Download-everything file and see exactly what it would add before anything changes",
+      "\"Restore what's missing\" brings back only what's gone (scripts, series, ideas, characters, beats, drafts with their versions and comments) and leaves everything still there untouched; \"Add everything as copies\" imports the whole file next to what you have",
+      "Restoring only ever adds — never overwrites or deletes — runs as a single step so a failure changes nothing, and never attaches to another account's data",
+      "Fixed: deleting a script left its beats behind as unreachable leftovers; they're now deleted with the script, and existing leftovers are cleaned up",
+    ],
+  },
 ];
 
 // Not built yet — discussed and agreed as direction, not a fixed commitment.
 export const ROADMAP: string[] = [
   "Wire episode credits into the actual PDF / Fountain / FDX export output",
-  "Backup as a zipped FDX + Fountain bundle, and embedding uploaded files (JSON backup exists today)",
+  "Backup as a zipped FDX + Fountain bundle, and embedding uploaded files (JSON backup and restore exist today)",
   "Air order vs. production order for episodes",
   "Offline-first drafting (local queue, sync on reconnect)",
   "Read-only, watermarked share links for sending drafts to collaborators",

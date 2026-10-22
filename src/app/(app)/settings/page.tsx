@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { ChangePinForm } from "./change-pin-form";
 import { GoalForm } from "./goal-form";
+import { RestoreBackup } from "./restore-backup";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { CHANGELOG, ROADMAP } from "@/lib/changelog";
 import type { Metadata } from "next";
@@ -48,6 +49,7 @@ export default async function SettingsPage() {
           Every project, script, outline, character, world note, beat, idea, and
           series in one file. Uploaded files are listed by link, not embedded.
         </p>
+        <RestoreBackup />
       </section>
 
       <section className="space-y-3">
