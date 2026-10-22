@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Draft" ADD COLUMN "revision" INTEGER NOT NULL DEFAULT 0;

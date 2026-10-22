@@ -1,8 +1,21 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getProjectOrNotFound } from "@/lib/get-project";
 import { templateLabel } from "@/lib/format-templates";
 import { ProjectTabNav } from "@/components/project-tab-nav";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const project = await getProjectOrNotFound(id);
+  return {
+    title: { default: project.title, template: `%s · ${project.title} · Quill` },
+  };
+}
 
 export default async function ProjectLayout({
   children,

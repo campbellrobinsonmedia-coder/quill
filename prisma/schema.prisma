@@ -281,6 +281,9 @@ model Draft {
   wordCount           Int      @default(0)
   sceneNumbersLocked  Boolean  @default(false)
   lastLockedVersionId String?
+  // Bumped on every content write; saves are compare-and-set against it so
+  // two tabs/devices can't silently overwrite each other.
+  revision            Int      @default(0)
   updatedAt           DateTime @updatedAt
 
   versions DraftVersion[]

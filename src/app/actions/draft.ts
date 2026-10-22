@@ -22,18 +22,37 @@ async function getOwnedDraft(userId: string, projectId: string) {
   return draft;
 }
 
-export async function saveDraft(projectId: string, content: DraftContent) {
+export type SaveDraftResult =
+  | { ok: true; revision: number }
+  | { ok: false; conflict: true; revision: number };
+
+// Compare-and-set against Draft.revision: if another tab/device saved since
+// this client last synced, nothing is written and the caller gets a conflict.
+export async function saveDraft(
+  projectId: string,
+  content: DraftContent,
+  baseRevision: number
+): Promise<SaveDraftResult> {
   const userId = await requireUserId();
   const draft = await getOwnedDraft(userId, projectId);
 
   const wordCount = countWords(content);
-  await prisma.draft.update({
-    where: { id: draft.id },
+  const result = await prisma.draft.updateMany({
+    where: { id: draft.id, revision: baseRevision },
     data: {
       content: content as unknown as Prisma.InputJsonValue,
       wordCount,
+      revision: { increment: 1 },
     },
   });
+
+  if (result.count === 0) {
+    const current = await prisma.draft.findUnique({
+      where: { id: draft.id },
+      select: { revision: true },
+    });
+    return { ok: false, conflict: true, revision: current?.revision ?? draft.revision };
+  }
 
   const delta = wordCount - draft.wordCount;
   if (delta > 0) {
@@ -44,6 +63,37 @@ export async function saveDraft(projectId: string, content: DraftContent) {
       update: { words: { increment: delta } },
     });
   }
+
+  return { ok: true, revision: baseRevision + 1 };
+}
+
+// "Keep my version" after a conflict: the other device's copy is preserved as
+// a restorable version before this client's content replaces it.
+export async function overwriteDraft(projectId: string, content: DraftContent) {
+  const userId = await requireUserId();
+  const draft = await getOwnedDraft(userId, projectId);
+
+  await prisma.draftVersion.create({
+    data: {
+      draftId: draft.id,
+      content: draft.content as Prisma.InputJsonValue,
+      wordCount: draft.wordCount,
+      label: "Replaced after edit conflict",
+    },
+  });
+
+  const updated = await prisma.draft.update({
+    where: { id: draft.id },
+    data: {
+      content: content as unknown as Prisma.InputJsonValue,
+      wordCount: countWords(content),
+      revision: { increment: 1 },
+    },
+    select: { revision: true },
+  });
+
+  revalidatePath(`/projects/${projectId}/write`);
+  return { revision: updated.revision };
 }
 
 export async function createVersionSnapshot(
@@ -109,16 +159,21 @@ export async function restoreVersion(projectId: string, versionId: string) {
     },
   });
 
-  await prisma.draft.update({
+  const updated = await prisma.draft.update({
     where: { id: draft.id },
     data: {
       content: version.content as Prisma.InputJsonValue,
       wordCount: version.wordCount,
+      revision: { increment: 1 },
     },
+    select: { revision: true },
   });
 
   revalidatePath(`/projects/${projectId}/write`);
-  return version.content as unknown as DraftContent;
+  return {
+    content: version.content as unknown as DraftContent,
+    revision: updated.revision,
+  };
 }
 
 // Freezes scene numbers and starts a new distribution revision: existing
@@ -160,17 +215,19 @@ export async function lockDraft(projectId: string, content: DraftContent) {
     select: { id: true, wordCount: true, label: true, createdAt: true },
   });
 
-  await prisma.draft.update({
+  const updated = await prisma.draft.update({
     where: { id: draft.id },
     data: {
       content: numberedContent as unknown as Prisma.InputJsonValue,
       sceneNumbersLocked: true,
       lastLockedVersionId: version.id,
+      revision: { increment: 1 },
     },
+    select: { revision: true },
   });
 
   revalidatePath(`/projects/${projectId}/write`);
-  return { content: numberedContent, revisionColor, version };
+  return { content: numberedContent, revisionColor, version, revision: updated.revision };
 }
 
 export async function getRevisionBaseline(projectId: string) {
@@ -201,16 +258,18 @@ export async function importFdx(projectId: string, xml: string) {
     },
   });
 
-  await prisma.draft.update({
+  const updated = await prisma.draft.update({
     where: { id: draft.id },
     data: {
       content: imported as unknown as Prisma.InputJsonValue,
       wordCount: countWords(imported),
+      revision: { increment: 1 },
     },
+    select: { revision: true },
   });
 
   revalidatePath(`/projects/${projectId}/write`);
-  return imported;
+  return { content: imported, revision: updated.revision };
 }
 
 export async function createComment(

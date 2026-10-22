@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { getProjectOrNotFound } from "@/lib/get-project";
 import { NewWorldNoteForm } from "@/components/new-world-note-form";
 import { WorldNoteItem } from "@/components/world-note-item";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "World" };
 
 export default async function WorldPage({
   params,

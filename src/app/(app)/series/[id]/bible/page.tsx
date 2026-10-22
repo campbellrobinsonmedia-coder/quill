@@ -4,6 +4,9 @@ import { NewCharacterForm } from "@/components/new-character-form";
 import { CharacterItem } from "@/components/character-item";
 import { NewWorldNoteForm } from "@/components/new-world-note-form";
 import { WorldNoteItem } from "@/components/world-note-item";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Series Bible" };
 
 export default async function SeriesBiblePage({
   params,

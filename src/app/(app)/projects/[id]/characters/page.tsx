@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { getProjectOrNotFound } from "@/lib/get-project";
 import { NewCharacterForm } from "@/components/new-character-form";
 import { CharacterItem } from "@/components/character-item";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Characters" };
 
 export default async function CharactersPage({
   params,

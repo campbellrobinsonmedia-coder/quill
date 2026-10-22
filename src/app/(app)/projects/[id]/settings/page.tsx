@@ -1,5 +1,8 @@
 import { getProjectOrNotFound } from "@/lib/get-project";
 import { ProjectSettingsForm } from "@/components/project-settings-form";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Settings" };
 
 export default async function ProjectSettingsPage({
   params,

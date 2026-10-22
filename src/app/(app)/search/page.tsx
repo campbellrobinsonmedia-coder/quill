@@ -2,6 +2,9 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import type { DraftContent } from "@/lib/draft-content";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Search" };
 
 type Hit = { id: string; href: string; title: string; detail?: string; context?: string };
 

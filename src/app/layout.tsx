@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Quill",
+  title: { default: "Quill", template: "%s · Quill" },
   description: "Capture ideas, organize your story, and draft prose or scripts.",
   manifest: "/manifest.json",
   appleWebApp: {

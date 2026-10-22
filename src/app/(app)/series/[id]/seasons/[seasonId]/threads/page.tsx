@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { getSeasonOrNotFound } from "@/lib/get-series";
 import { prisma } from "@/lib/prisma";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Thread matrix" };
 
 export default async function ThreadMatrixPage({
   params,

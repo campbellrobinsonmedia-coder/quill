@@ -163,6 +163,41 @@ export function nextEnterType(current: ScreenplayElementType): ScreenplayElement
   }
 }
 
+// Enter on an empty cue/dialogue/transition line converts it to Action in
+// place (Final Draft behavior) instead of leaving an orphan empty element
+// behind and pushing a new line below it.
+export function enterOnEmptyType(
+  current: ScreenplayElementType
+): ScreenplayElementType | null {
+  switch (current) {
+    case "scene_heading":
+    case "character":
+    case "parenthetical":
+    case "dialogue":
+    case "transition":
+      return "action";
+    case "action":
+      return null;
+  }
+}
+
+const SCENE_HEADING_PREFIX =
+  /^(?:(?:INT|EXT|EST)\.|(?:INT\.?\/EXT|EXT\.?\/INT|I\/E)\.?)\s/i;
+const TRANSITION_LINE = /^(?:[A-Z][A-Z' ]*\bTO:|FADE OUT\.|FADE TO BLACK\.)$/;
+
+// Fountain-style auto-detection while typing in an Action line: a leading
+// "INT." / "EXT." / "I/E" becomes a scene heading, and an all-caps "CUT TO:"
+// style line becomes a transition. Returns null when nothing should change.
+export function detectElementType(
+  current: ScreenplayElementType,
+  text: string
+): ScreenplayElementType | null {
+  if (current !== "action") return null;
+  if (SCENE_HEADING_PREFIX.test(text)) return "scene_heading";
+  if (TRANSITION_LINE.test(text.trim())) return "transition";
+  return null;
+}
+
 // Auto-numbers scenes 1,2,3... when unlocked. Once locked, existing scene
 // headings keep their persisted sceneNumber, and any scene inserted after
 // locking gets a letter suffix off the nearest preceding locked number

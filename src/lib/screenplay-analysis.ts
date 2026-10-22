@@ -48,8 +48,11 @@ function isNight(time: string): boolean {
   return /NIGHT|DUSK|EVENING/.test(time);
 }
 
-export function buildSceneReport(content: ScreenplayContent): SceneReportRow[] {
-  const numbers = computeSceneNumbers(content.elements, true);
+export function buildSceneReport(
+  content: ScreenplayContent,
+  sceneNumbersLocked = false
+): SceneReportRow[] {
+  const numbers = computeSceneNumbers(content.elements, sceneNumbersLocked);
   const scenes = groupScenes(content.elements);
 
   return scenes
@@ -126,6 +129,9 @@ export function buildCharacterReport(
   for (const el of content.elements) {
     if (el.type === "character" && el.text.trim()) {
       currentCharacter = el.text.trim();
+    } else if (["scene_heading", "action", "transition"].includes(el.type)) {
+      // A cue only owns the dialogue that follows it directly.
+      currentCharacter = null;
     } else if (el.type === "dialogue" && currentCharacter) {
       const row = ensure(currentCharacter);
       row.lineCount += 1;

@@ -10,6 +10,9 @@ import { DeleteProjectButton } from "./delete-project-button";
 import { DeleteSeriesButton } from "./delete-series-button";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import { WritingGoalCard } from "@/components/writing-goal-card";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Projects" };
 
 type ListItem = {
   kind: "script" | "series";

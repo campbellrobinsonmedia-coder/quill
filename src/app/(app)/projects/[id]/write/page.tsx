@@ -2,6 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { getProjectOrNotFound } from "@/lib/get-project";
 import { createEmptyContent, type DraftContent, type ScreenplayContent } from "@/lib/draft-content";
 import { WriteEditor } from "@/components/editor/write-editor";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Write" };
 
 export default async function WritePage({
   params,
@@ -63,6 +66,7 @@ export default async function WritePage({
     <WriteEditor
       projectId={id}
       initialContent={draft.content as unknown as DraftContent}
+      initialRevision={draft.revision}
       initialVersions={versions}
       characterNames={characters.map((c) => c.name)}
       locationSuggestions={worldNotes.map((w) => w.title)}

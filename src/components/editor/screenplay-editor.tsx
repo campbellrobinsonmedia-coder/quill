@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import {
   computeSceneNumbers,
+  detectElementType,
   ELEMENT_LABELS,
+  enterOnEmptyType,
   makeId,
   nextEnterType,
   nextTabType,
@@ -162,9 +164,11 @@ export function ScreenplayEditor({
 
   function updateElement(index: number, text: string) {
     const el = elements[index];
-    const value = UPPERCASE_TYPES.includes(el.type) ? text.toUpperCase() : text;
+    const detected = detectElementType(el.type, text);
+    const type = detected ?? el.type;
+    const value = UPPERCASE_TYPES.includes(type) ? text.toUpperCase() : text;
     const next = elements.slice();
-    next[index] = { ...el, text: value };
+    next[index] = { ...el, type, text: value };
     setElements(next);
   }
 
@@ -249,6 +253,13 @@ export function ScreenplayEditor({
 
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
+      if (!el.text.trim()) {
+        const converted = enterOnEmptyType(el.type);
+        if (converted) {
+          setType(index, converted);
+          return;
+        }
+      }
       const pos = textarea.selectionStart;
       const before = el.text.slice(0, pos);
       const after = el.text.slice(pos);
@@ -542,7 +553,7 @@ export function ScreenplayEditor({
 
   return (
     <div className="w-full">
-      <div className="sticky top-0 z-10 mb-2 flex items-center justify-end gap-1 bg-white/90 py-1 backdrop-blur dark:bg-neutral-950/90">
+      <div className="sticky top-0 z-10 mb-2 flex items-center justify-end gap-1 bg-neutral-100/90 py-1 backdrop-blur dark:bg-black/90">
         <button
           type="button"
           onClick={() => zoomBy(-0.1)}
@@ -571,7 +582,7 @@ export function ScreenplayEditor({
         <div style={{ height: pageHeight }} className="flex justify-center">
           <div
             ref={pageRef}
-            className="shrink-0 bg-white p-[1in] text-black shadow-sm dark:bg-neutral-950 dark:text-neutral-100"
+            className="shrink-0 bg-white p-[1in] text-black shadow-md ring-1 ring-neutral-200 dark:bg-neutral-900 dark:text-neutral-100 dark:ring-neutral-800"
             style={{
               width: PAGE_WIDTH_PX,
               transform: `scale(${scale})`,

@@ -2,6 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { getSeriesOrNotFound } from "@/lib/get-series";
 import { NewSeriesIdeaForm } from "./new-series-idea-form";
 import { SeriesIdeaItem } from "./series-idea-item";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Ideas" };
 
 export default async function SeriesIdeasPage({
   params,

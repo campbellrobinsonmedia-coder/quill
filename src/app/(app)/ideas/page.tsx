@@ -3,6 +3,9 @@ import { requireUserId } from "@/lib/session";
 import { QuickAddIdea } from "@/components/quick-add-idea";
 import { IdeaItem } from "@/components/idea-item";
 import { SearchBox } from "@/components/search-box";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "General ideas" };
 
 export default async function IdeasPage({
   searchParams,

@@ -1,5 +1,19 @@
+import type { Metadata } from "next";
+import Link from "next/link";
 import { getSeriesOrNotFound } from "@/lib/get-series";
 import { SeriesTabNav } from "@/components/series-tab-nav";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const series = await getSeriesOrNotFound(id);
+  return {
+    title: { default: series.title, template: `%s · ${series.title} · Quill` },
+  };
+}
 
 export default async function SeriesLayout({
   children,
@@ -18,8 +32,18 @@ export default async function SeriesLayout({
           {series.format ? series.format : "Series"}
         </p>
         <h1 className="text-xl font-semibold">{series.title}</h1>
-        {series.premise && (
+        {series.premise ? (
           <p className="mt-1 text-sm text-neutral-500">{series.premise}</p>
+        ) : (
+          <p className="mt-1 text-sm text-neutral-500">
+            No premise yet —{" "}
+            <Link
+              href={`/series/${id}#series-details`}
+              className="underline underline-offset-2"
+            >
+              add one
+            </Link>
+          </p>
         )}
       </div>
       <SeriesTabNav seriesId={id} />

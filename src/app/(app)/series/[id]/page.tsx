@@ -5,6 +5,9 @@ import { SeriesMetaForm } from "./series-meta-form";
 import { NewSeasonForm } from "./new-season-form";
 import { BeatBoard } from "@/components/beat-board";
 import { ReferenceList } from "@/components/reference-list";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Overview" };
 
 export default async function SeriesOverviewPage({
   params,
@@ -106,7 +109,7 @@ export default async function SeriesOverviewPage({
         )}
       </section>
 
-      <section className="space-y-3">
+      <section id="series-details" className="scroll-mt-4 space-y-3">
         <h2 className="text-sm font-medium text-neutral-500">Series details</h2>
         <SeriesMetaForm
           seriesId={id}

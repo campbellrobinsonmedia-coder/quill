@@ -3,6 +3,9 @@ import { getProjectOrNotFound } from "@/lib/get-project";
 import { OutlineBoard } from "@/components/outline-board";
 import { BeatBoard } from "@/components/beat-board";
 import { listScenes, type DraftContent } from "@/lib/draft-content";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Outline" };
 
 export default async function OutlinePage({
   params,

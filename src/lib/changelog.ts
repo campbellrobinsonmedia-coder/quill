@@ -139,6 +139,19 @@ export const CHANGELOG: ChangelogRelease[] = [
       "Keyboard focus rings and higher-contrast secondary text",
     ],
   },
+  {
+    version: "v14",
+    title: "Editor fixes & safety net",
+    items: [
+      "Enter on an empty cue/dialogue/transition line now converts it to Action instead of leaving an empty cue behind",
+      "Typing INT./EXT./I/E at the start of an Action line auto-formats it as a scene heading; CUT TO: style lines become transitions",
+      "Reports numbers unlocked scenes 1, 2, 3 (was showing 0A), and stray dialogue is no longer credited to the previous speaker",
+      "Edit-conflict protection: saving from a stale tab or device is blocked, with Keep my version / Load the other copy, and the other copy is kept in version history",
+      "Unsaved text is also kept on the device and offered back after a failed save, lost connection, or closed tab; failed saves retry automatically",
+      "Cleaner editor toolbar (Export menu) and a visible script page; page titles now name the project and section",
+      "Automated tests and a CI check (lint, types, tests, build) on every push",
+    ],
+  },
 ];
 
 // Not built yet — discussed and agreed as direction, not a fixed commitment.

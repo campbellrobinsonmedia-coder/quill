@@ -18,13 +18,15 @@ export function VersionHistory({
   versions,
   onVersionsChange,
   onRestore,
+  onBeforeRestore,
   onClose,
 }: {
   projectId: string;
   content: DraftContent;
   versions: VersionSummary[];
   onVersionsChange: (versions: VersionSummary[]) => void;
-  onRestore: (content: DraftContent) => void;
+  onRestore: (content: DraftContent, revision: number) => void;
+  onBeforeRestore: () => Promise<void>;
   onClose: () => void;
 }) {
   const [label, setLabel] = useState("");
@@ -43,8 +45,9 @@ export function VersionHistory({
   function restore(versionId: string) {
     setRestoringId(versionId);
     startTransition(async () => {
+      await onBeforeRestore();
       const restored = await restoreVersion(projectId, versionId);
-      onRestore(restored);
+      onRestore(restored.content, restored.revision);
       setRestoringId(null);
     });
   }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   saveDraft,
+  overwriteDraft,
   createVersionSnapshot,
   lockDraft,
   createComment,
@@ -22,12 +23,13 @@ import { ProseEditor } from "@/components/editor/prose-editor";
 import { ScreenplayEditor, type CommentData } from "@/components/editor/screenplay-editor";
 import { VersionHistory, type VersionSummary } from "@/components/editor/version-history";
 import { ReadAloud } from "@/components/editor/read-aloud";
+import { Menu, MENU_ITEM } from "@/components/menu";
 
 const AUTOSAVE_DELAY_MS = 1200;
 const AUTO_SNAPSHOT_INTERVAL_MS = 10 * 60 * 1000;
 
 const TOOLBAR_ITEM =
-  "inline-flex h-11 items-center px-2 hover:text-neutral-900 dark:hover:text-neutral-100";
+  "inline-flex h-11 items-center rounded px-2 hover:text-neutral-900 sm:h-9 dark:hover:text-neutral-100";
 
 function formatTime(date: Date): string {
   return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
@@ -36,6 +38,7 @@ function formatTime(date: Date): string {
 export function WriteEditor({
   projectId,
   initialContent,
+  initialRevision,
   initialVersions,
   characterNames = [],
   locationSuggestions = [],
@@ -46,6 +49,7 @@ export function WriteEditor({
 }: {
   projectId: string;
   initialContent: DraftContent;
+  initialRevision: number;
   initialVersions: VersionSummary[];
   characterNames?: string[];
   locationSuggestions?: string[];
@@ -55,7 +59,8 @@ export function WriteEditor({
   initialComments?: CommentData[];
 }) {
   const [content, setContent] = useState(initialContent);
-  const [saveState, setSaveState] = useState<"saved" | "saving" | "pending" | "error">("saved");
+  const [saveState, setSaveState] = useState<"saved" | "saving" | "pending" | "error" | "conflict">("saved");
+  const [recovery, setRecovery] = useState<{ content: DraftContent; at: number } | null>(null);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [focusMode, setFocusMode] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -91,10 +96,16 @@ export function WriteEditor({
   }
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryCount = useRef(0);
   const contentRef = useRef(content);
+  const revisionRef = useRef(initialRevision);
+  const conflictRef = useRef(false);
+  const inFlight = useRef<Promise<void>>(Promise.resolve());
   const dirtyRef = useRef(false);
   const lastSnapshotAt = useRef<number>(0);
   const isFirstRender = useRef(true);
+  const backupKey = `quill:draft-backup:${projectId}`;
 
   useEffect(() => {
     contentRef.current = content;
@@ -107,30 +118,111 @@ export function WriteEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function performSave() {
-    if (saveTimer.current) {
-      clearTimeout(saveTimer.current);
-      saveTimer.current = null;
-    }
-    setSaveState("saving");
+  // A copy of unsaved text kept on this device, so a failed save, a lost
+  // connection, or a closed tab never costs the writer their words.
+  function writeBackup() {
     try {
-      await saveDraft(projectId, contentRef.current);
-      dirtyRef.current = false;
-      setSaveState("saved");
+      localStorage.setItem(
+        backupKey,
+        JSON.stringify({
+          content: contentRef.current,
+          baseRevision: revisionRef.current,
+          at: Date.now(),
+        })
+      );
+    } catch {
+      // Storage unavailable or full; the in-memory copy is all we have.
+    }
+  }
+
+  function clearBackup() {
+    try {
+      localStorage.removeItem(backupKey);
+    } catch {
+      // ignore
+    }
+  }
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(backupKey);
+      if (!raw) return;
+      const backup = JSON.parse(raw) as { content: DraftContent; at: number };
+      if (JSON.stringify(backup.content) === JSON.stringify(initialContent)) {
+        localStorage.removeItem(backupKey);
+        return;
+      }
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setRecovery({ content: backup.content, at: backup.at });
+    } catch {
+      // Corrupt backup; ignore it.
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function scheduleRetry() {
+    if (retryTimer.current) clearTimeout(retryTimer.current);
+    const delay = [5000, 15000, 45000][Math.min(retryCount.current, 2)];
+    retryCount.current += 1;
+    retryTimer.current = setTimeout(() => {
+      void performSave();
+    }, delay);
+  }
+
+  async function doSave() {
+    if (conflictRef.current) return;
+    setSaveState("saving");
+    const snapshot = contentRef.current;
+    try {
+      const result = await saveDraft(projectId, snapshot, revisionRef.current);
+      if (!result.ok) {
+        conflictRef.current = true;
+        writeBackup();
+        setSaveState("conflict");
+        return;
+      }
+      revisionRef.current = result.revision;
+      retryCount.current = 0;
       setLastSavedAt(new Date());
+      if (contentRef.current === snapshot) {
+        dirtyRef.current = false;
+        setSaveState("saved");
+        clearBackup();
+      } else {
+        // Typed during the save; the content effect has already queued another.
+        setSaveState("pending");
+      }
 
       if (Date.now() - lastSnapshotAt.current >= AUTO_SNAPSHOT_INTERVAL_MS) {
         const version = await createVersionSnapshot(
           projectId,
-          contentRef.current,
+          snapshot,
           "Autosave checkpoint"
         );
         lastSnapshotAt.current = Date.now();
         setVersions((prev) => [version, ...prev]);
       }
     } catch {
+      writeBackup();
       setSaveState("error");
+      scheduleRetry();
     }
+  }
+
+  // Saves run one at a time: two overlapping saves would share a base
+  // revision, and the second would be rejected as a conflict with the first.
+  function performSave(): Promise<void> {
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+    }
+    if (retryTimer.current) {
+      clearTimeout(retryTimer.current);
+      retryTimer.current = null;
+    }
+    const run = inFlight.current.then(doSave);
+    inFlight.current = run.catch(() => {});
+    return run;
   }
 
   useEffect(() => {
@@ -139,6 +231,7 @@ export function WriteEditor({
       return;
     }
     dirtyRef.current = true;
+    if (conflictRef.current) return;
     setSaveState("pending");
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(performSave, AUTOSAVE_DELAY_MS);
@@ -153,25 +246,68 @@ export function WriteEditor({
   // (client-side route changes unmount this component but don't fire beforeunload).
   useEffect(() => {
     return () => {
-      if (dirtyRef.current && saveTimer.current) {
-        clearTimeout(saveTimer.current);
-        saveDraft(projectId, contentRef.current).catch(() => {});
+      if (retryTimer.current) clearTimeout(retryTimer.current);
+      if (dirtyRef.current && !conflictRef.current) {
+        if (saveTimer.current) clearTimeout(saveTimer.current);
+        const latest = contentRef.current;
+        inFlight.current
+          .then(() => saveDraft(projectId, latest, revisionRef.current))
+          .then((result) => {
+            if (!result.ok) writeBackup();
+          })
+          .catch(() => writeBackup());
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Warn before closing/reloading the tab with an unsaved edit still pending.
+  // Warn before closing/reloading the tab with an unsaved edit still pending,
+  // and keep a local copy in case the tab is killed anyway (mobile Safari
+  // often skips beforeunload).
   useEffect(() => {
     function handleBeforeUnload(e: BeforeUnloadEvent) {
       if (dirtyRef.current) {
+        writeBackup();
         e.preventDefault();
         e.returnValue = "";
       }
     }
+    function handleHidden() {
+      if (document.visibilityState === "hidden" && dirtyRef.current) writeBackup();
+    }
+    function handleOnline() {
+      if (dirtyRef.current && !conflictRef.current) void performSave();
+    }
     window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("pagehide", handleHidden);
+    document.addEventListener("visibilitychange", handleHidden);
+    window.addEventListener("online", handleOnline);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("pagehide", handleHidden);
+      document.removeEventListener("visibilitychange", handleHidden);
+      window.removeEventListener("online", handleOnline);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function keepMyVersion() {
+    startTransition(async () => {
+      const result = await overwriteDraft(projectId, contentRef.current);
+      revisionRef.current = result.revision;
+      conflictRef.current = false;
+      dirtyRef.current = false;
+      setSaveState("saved");
+      setLastSavedAt(new Date());
+      clearBackup();
+    });
+  }
+
+  function loadLatest() {
+    // The other copy wins; our edits stay in the local backup for recovery.
+    dirtyRef.current = false;
+    window.location.reload();
+  }
 
   const wordCount = countWords(content);
   const pageCount = estimatePageCount(content);
@@ -185,7 +321,10 @@ export function WriteEditor({
       return;
     }
     startLocking(async () => {
-      const result = await lockDraft(projectId, content);
+      await performSave();
+      if (conflictRef.current) return;
+      const result = await lockDraft(projectId, contentRef.current);
+      revisionRef.current = result.revision;
       setContent(result.content);
       setSceneNumbersLocked(true);
       setRevisionColor(result.revisionColor);
@@ -211,8 +350,11 @@ export function WriteEditor({
     }
     startTransition(async () => {
       const xml = await file.text();
-      const imported = await importFdx(projectId, xml);
-      setContent(imported);
+      await performSave();
+      if (conflictRef.current) return;
+      const result = await importFdx(projectId, xml);
+      revisionRef.current = result.revision;
+      setContent(result.content);
     });
   }
 
@@ -283,11 +425,14 @@ export function WriteEditor({
                 {saveState === "pending" && "Unsaved changes"}
                 {saveState === "error" && (
                   <span className="text-red-600">
-                    Save failed —{" "}
+                    Not saved — retrying. A copy is kept on this device.{" "}
                     <button onClick={performSave} className="underline">
-                      Retry
+                      Retry now
                     </button>
                   </span>
+                )}
+                {saveState === "conflict" && (
+                  <span className="text-red-600">Edited elsewhere — not saved</span>
                 )}
               </span>
               {revisionColor && (
@@ -302,93 +447,143 @@ export function WriteEditor({
             <div className="flex flex-wrap items-center gap-1">
               {content.type === "screenplay" && (
                 <>
-                  <div className="flex flex-wrap items-center gap-1 border-r border-neutral-200 pr-1 dark:border-neutral-800">
-                    <input
-                      value={watermark}
-                      onChange={(e) => setWatermark(e.target.value)}
-                      placeholder="Watermark (optional)"
-                      aria-label="Watermark for PDF export"
-                      className="h-11 w-28 rounded border border-neutral-300 bg-transparent px-1.5 text-xs outline-none dark:border-neutral-700"
-                    />
+                  <Menu label="Export" buttonClassName={TOOLBAR_ITEM}>
+                    <label className="block px-3 pb-1 pt-2 text-xs text-neutral-500">
+                      PDF watermark (optional)
+                      <input
+                        value={watermark}
+                        onChange={(e) => setWatermark(e.target.value)}
+                        aria-label="Watermark for PDF export"
+                        className="mt-1 block w-full rounded border border-neutral-300 bg-transparent px-2 py-1.5 text-sm outline-none dark:border-neutral-700"
+                      />
+                    </label>
                     <a
                       href={`/api/projects/${projectId}/export/pdf${watermark ? `?watermark=${encodeURIComponent(watermark)}` : ""}`}
-                      className={TOOLBAR_ITEM}
+                      className={MENU_ITEM}
                     >
                       PDF
                     </a>
                     <a
                       href={`/api/projects/${projectId}/export/fountain`}
-                      className={TOOLBAR_ITEM}
+                      className={MENU_ITEM}
                     >
                       Fountain
                     </a>
                     <a
                       href={`/api/projects/${projectId}/export/fdx`}
-                      className={TOOLBAR_ITEM}
+                      className={MENU_ITEM}
                     >
-                      FDX
+                      Final Draft (FDX)
                     </a>
                     <button
+                      type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className={TOOLBAR_ITEM}
+                      className={`${MENU_ITEM} border-t border-neutral-100 dark:border-neutral-800`}
                     >
-                      Import FDX
+                      Import FDX…
                     </button>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".fdx"
-                      onChange={handleImportFdx}
-                      className="hidden"
-                    />
-                  </div>
+                  </Menu>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".fdx"
+                    onChange={handleImportFdx}
+                    className="hidden"
+                  />
 
-                  <div className="flex flex-wrap items-center gap-1 border-r border-neutral-200 pr-1 dark:border-neutral-800">
-                    <button
-                      onClick={() => setHideAction((v) => !v)}
-                      title="Hide action lines to read dialogue on its own"
-                      className={
-                        hideAction
-                          ? `${TOOLBAR_ITEM} text-neutral-900 dark:text-neutral-100`
-                          : TOOLBAR_ITEM
-                      }
-                    >
-                      Hide action lines
-                    </button>
-                    <ReadAloud content={content} className={TOOLBAR_ITEM} />
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-1 border-r border-neutral-200 pr-1 dark:border-neutral-800">
-                    <button
-                      onClick={handleLockDraft}
-                      disabled={isLocking}
-                      title="Assign permanent scene numbers and start a new revision"
-                      className={`${TOOLBAR_ITEM} disabled:opacity-60`}
-                    >
-                      {isLocking ? "Locking…" : "Lock revision"}
-                    </button>
-                    <button
-                      onClick={() => setShowHistory((v) => !v)}
-                      className={TOOLBAR_ITEM}
-                    >
-                      History
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setHideAction((v) => !v)}
+                    aria-pressed={hideAction}
+                    title="Hide action lines to read dialogue on its own"
+                    className={
+                      hideAction
+                        ? `${TOOLBAR_ITEM} font-medium text-neutral-900 dark:text-neutral-100`
+                        : TOOLBAR_ITEM
+                    }
+                  >
+                    Dialogue only
+                  </button>
+                  <ReadAloud content={content} className={TOOLBAR_ITEM} />
+                  <button
+                    onClick={handleLockDraft}
+                    disabled={isLocking}
+                    title="Assign permanent scene numbers and start a new revision"
+                    className={`${TOOLBAR_ITEM} disabled:opacity-60`}
+                  >
+                    {isLocking ? "Locking…" : "Lock revision"}
+                  </button>
                 </>
               )}
-              {content.type === "prose" && (
-                <button
-                  onClick={() => setShowHistory((v) => !v)}
-                  className={TOOLBAR_ITEM}
-                >
-                  History
-                </button>
-              )}
+              <button
+                onClick={() => setShowHistory((v) => !v)}
+                className={TOOLBAR_ITEM}
+              >
+                History
+              </button>
               <button
                 onClick={() => setFocusMode(true)}
-                className="inline-flex h-11 items-center rounded-md bg-neutral-900 px-3 text-xs font-medium text-white dark:bg-white dark:text-neutral-900"
+                className="inline-flex h-11 items-center rounded-md border border-neutral-300 px-3 text-xs font-medium text-neutral-700 hover:bg-neutral-50 sm:h-9 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
               >
-                Focus mode
+                Focus
+              </button>
+            </div>
+          </div>
+        )}
+
+        {saveState === "conflict" && (
+          <div
+            role="alert"
+            className="flex flex-wrap items-center gap-3 border-b border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 sm:px-6 dark:border-red-900 dark:bg-red-950 dark:text-red-100"
+          >
+            <p className="min-w-0 flex-1">
+              This script was changed on another device or tab, so your latest
+              edits haven&apos;t been saved. Choose which copy to keep — the
+              other one is saved to version history either way.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={keepMyVersion}
+                className="rounded-md bg-red-700 px-3 py-1.5 text-xs font-medium text-white"
+              >
+                Keep my version
+              </button>
+              <button
+                onClick={loadLatest}
+                className="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium dark:border-red-800"
+              >
+                Load the other copy
+              </button>
+            </div>
+          </div>
+        )}
+
+        {recovery && (
+          <div
+            role="status"
+            className="flex flex-wrap items-center gap-3 border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:px-6 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100"
+          >
+            <p className="min-w-0 flex-1">
+              Found unsaved changes from this device (
+              {new Date(recovery.at).toLocaleString()}).
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setContent(recovery.content);
+                  setRecovery(null);
+                }}
+                className="rounded-md bg-amber-700 px-3 py-1.5 text-xs font-medium text-white"
+              >
+                Restore them
+              </button>
+              <button
+                onClick={() => {
+                  clearBackup();
+                  setRecovery(null);
+                }}
+                className="rounded-md border border-amber-300 px-3 py-1.5 text-xs font-medium dark:border-amber-800"
+              >
+                Discard
               </button>
             </div>
           </div>
@@ -403,7 +598,11 @@ export function WriteEditor({
           </button>
         )}
 
-        <div className="min-w-0 flex-1 overflow-y-auto px-6 py-8">
+        <div
+          className={`min-w-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 ${
+            content.type === "screenplay" ? "bg-neutral-100 dark:bg-black" : "sm:py-8"
+          }`}
+        >
           {content.type === "prose" ? (
             <ProseEditor
               content={content}
@@ -452,7 +651,11 @@ export function WriteEditor({
           content={content}
           versions={versions}
           onVersionsChange={setVersions}
-          onRestore={(restored) => setContent(restored)}
+          onBeforeRestore={performSave}
+          onRestore={(restored, revision) => {
+            revisionRef.current = revision;
+            setContent(restored);
+          }}
           onClose={() => setShowHistory(false)}
         />
       )}

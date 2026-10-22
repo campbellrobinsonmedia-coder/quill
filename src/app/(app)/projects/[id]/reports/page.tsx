@@ -6,6 +6,9 @@ import {
   buildLocationReport,
   buildCharacterReport,
 } from "@/lib/screenplay-analysis";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Reports" };
 
 export default async function ReportsPage({
   params,
@@ -29,7 +32,7 @@ export default async function ReportsPage({
     );
   }
 
-  const sceneRows = buildSceneReport(content);
+  const sceneRows = buildSceneReport(content, draft?.sceneNumbersLocked ?? false);
   const locationRows = buildLocationReport(sceneRows);
   const characterRows = buildCharacterReport(content, sceneRows);
 

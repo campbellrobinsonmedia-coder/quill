@@ -2,6 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { getProjectOrNotFound } from "@/lib/get-project";
 import { QuickAddIdea } from "@/components/quick-add-idea";
 import { IdeaItem } from "@/components/idea-item";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Ideas" };
 
 export default async function ProjectIdeasPage({
   params,

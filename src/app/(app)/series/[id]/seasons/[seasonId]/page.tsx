@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getSeasonOrNotFound } from "@/lib/get-series";
 import { prisma } from "@/lib/prisma";
@@ -27,6 +28,16 @@ const STATUS_STYLE: Record<EpisodeStatus, string> = {
   Drafted: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
   Locked: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
 };
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string; seasonId: string }>;
+}): Promise<Metadata> {
+  const { seasonId } = await params;
+  const season = await getSeasonOrNotFound(seasonId);
+  return { title: `Season ${season.number}${season.title ? `: ${season.title}` : ""}` };
+}
 
 export default async function SeasonBoardPage({
   params,
