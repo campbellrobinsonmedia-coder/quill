@@ -176,6 +176,16 @@ export const CHANGELOG: ChangelogRelease[] = [
       "Sidebar updates immediately when you add, archive or delete things",
     ],
   },
+  {
+    version: "v17",
+    title: "Idea inbox",
+    items: [
+      "Ideas get #tags (type them as you capture), an optional title, and a status: Spark, Developing, Promoted or Archived",
+      "Develop an idea into a new script (any format) or a new series in one click — the title and text carry over and the idea links to what it became",
+      "Filter by status and tag, search titles and text, and flip on \"Include filed ideas\" to see every idea across all projects and series in one list",
+      "Edit an idea's title, text and tags in place",
+    ],
+  },
 ];
 
 // Not built yet — discussed and agreed as direction, not a fixed commitment.

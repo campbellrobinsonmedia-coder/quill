@@ -31,7 +31,7 @@ export function QuickAddIdea({ projectId }: { projectId?: string }) {
             handleSubmit(e);
           }
         }}
-        placeholder="Quick-add an idea…"
+        placeholder="New idea… (add #tags)"
         rows={1}
         className="flex-1 resize-none rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900"
       />

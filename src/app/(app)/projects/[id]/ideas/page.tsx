@@ -32,7 +32,10 @@ export default async function ProjectIdeasPage({
             <IdeaItem
               key={idea.id}
               id={idea.id}
+              title={idea.title}
               content={idea.content}
+              tags={idea.tags}
+              status={idea.status}
               createdAt={idea.createdAt.toLocaleDateString()}
             />
           ))}

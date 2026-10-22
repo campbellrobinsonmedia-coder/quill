@@ -67,12 +67,13 @@ model Series {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
-  seasons    Season[]
-  characters Character[]
-  worldNotes WorldNote[]
-  ideas      Idea[]
-  beats      Beat[]
-  references Reference[]
+  seasons           Season[]
+  characters        Character[]
+  worldNotes        WorldNote[]
+  ideas             Idea[]      @relation("IdeaSeries")
+  promotedFromIdeas Idea[]      @relation("IdeaPromotedSeries")
+  beats             Beat[]
+  references        Reference[]
 
   @@index([userId])
 }
@@ -146,34 +147,53 @@ model Project {
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
-  ideas        Idea[]
-  characters   Character[]
-  outlineCards OutlineCard[]
-  worldNotes   WorldNote[]
-  beats        Beat[]        @relation("BeatProject")
-  draft        Draft?
+  ideas             Idea[]        @relation("IdeaProject")
+  promotedFromIdeas Idea[]        @relation("IdeaPromotedProject")
+  characters        Character[]
+  outlineCards      OutlineCard[]
+  worldNotes        WorldNote[]
+  beats             Beat[]        @relation("BeatProject")
+  draft             Draft?
 
   @@index([seasonId])
 }
 
+enum IdeaStatus {
+  SPARK
+  DEVELOPING
+  PROMOTED
+  ARCHIVED
+}
+
 model Idea {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  projectId String?
-  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  seriesId  String?
-  series    Series?  @relation(fields: [seriesId], references: [id], onDelete: SetNull)
-  seasonId  String?
-  season    Season?  @relation(fields: [seasonId], references: [id], onDelete: SetNull)
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String     @id @default(cuid())
+  userId            String
+  user              User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Scope: the project/series/season this idea is filed under. All null means
+  // it's a loose idea in the general inbox.
+  projectId         String?
+  project           Project?   @relation("IdeaProject", fields: [projectId], references: [id], onDelete: Cascade)
+  seriesId          String?
+  series            Series?    @relation("IdeaSeries", fields: [seriesId], references: [id], onDelete: SetNull)
+  seasonId          String?
+  season            Season?    @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  title             String?
+  content           String
+  tags              String[]   @default([])
+  status            IdeaStatus @default(SPARK)
+  // Set when the idea was developed into a new script or series.
+  promotedProjectId String?
+  promotedProject   Project?   @relation("IdeaPromotedProject", fields: [promotedProjectId], references: [id], onDelete: SetNull)
+  promotedSeriesId  String?
+  promotedSeries    Series?    @relation("IdeaPromotedSeries", fields: [promotedSeriesId], references: [id], onDelete: SetNull)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
 
   @@index([userId])
   @@index([projectId])
   @@index([seriesId])
   @@index([seasonId])
+  @@index([status])
 }
 
 model Character {
