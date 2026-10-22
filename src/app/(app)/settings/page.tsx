@@ -3,6 +3,8 @@ import { requireUserId } from "@/lib/session";
 import { ChangePinForm } from "./change-pin-form";
 import { GoalForm } from "./goal-form";
 import { RestoreBackup } from "./restore-backup";
+import { Passkeys } from "./passkeys";
+import { listPasskeys } from "@/lib/passkeys";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { CHANGELOG, ROADMAP } from "@/lib/changelog";
 import { emailEnabled } from "@/lib/email";
@@ -12,10 +14,13 @@ export const metadata: Metadata = { title: "Settings" };
 
 export default async function SettingsPage() {
   const userId = await requireUserId();
-  const user = await prisma.user.findUniqueOrThrow({
-    where: { id: userId },
-    select: { email: true, dailyWordGoal: true },
-  });
+  const [user, passkeys] = await Promise.all([
+    prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { email: true, dailyWordGoal: true },
+    }),
+    listPasskeys(userId),
+  ]);
 
   return (
     <div className="mx-auto w-full max-w-2xl flex-1 space-y-10 p-4 sm:p-6">
@@ -61,6 +66,11 @@ export default async function SettingsPage() {
           <li><kbd className="rounded border border-neutral-300 px-1.5 text-xs dark:border-neutral-700">Esc</kbd> Close the quick-add box</li>
         </ul>
         <p className="text-xs text-neutral-500">Shortcuts are ignored while you&apos;re typing in a field.</p>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-medium text-neutral-500">Passkeys</h2>
+        <Passkeys initial={passkeys} />
       </section>
 
       <section className="space-y-3">

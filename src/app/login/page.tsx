@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { LoginForm } from "./login-form";
+import { PasskeyButton } from "./passkey-button";
 import type { Metadata } from "next";
 import { emailEnabled } from "@/lib/email";
 
@@ -16,6 +17,9 @@ export default function LoginPage() {
         </div>
         <Suspense>
           <LoginForm />
+          <div className="mt-4">
+            <PasskeyButton />
+          </div>
         </Suspense>
         {emailEnabled() && (
           <p className="text-center text-sm text-neutral-500">

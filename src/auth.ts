@@ -11,6 +11,9 @@ import {
 } from "@/lib/login-throttle";
 import { DEVICE_COOKIE, readCookie, verifyDeviceToken } from "@/lib/trusted-device";
 import { emailEnabled } from "@/lib/email";
+import { finishAuthentication, relyingPartyFrom } from "@/lib/passkeys";
+import { MINUTE, recordHits, tooMany } from "@/lib/rate-limit";
+import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
 
 class TooManyAttempts extends CredentialsSignin {
   code = "too_many_attempts";
@@ -23,6 +26,35 @@ class EmailNotVerified extends CredentialsSignin {
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
+    // Passkey sign-in: the browser has already asked the device to sign a
+    // one-time challenge we issued; here we verify that signature.
+    Credentials({
+      id: "passkey",
+      name: "Passkey",
+      credentials: { challengeId: {}, response: {} },
+      authorize: async (credentials, request) => {
+        const challengeId = credentials?.challengeId;
+        const raw = credentials?.response;
+        if (typeof challengeId !== "string" || typeof raw !== "string") return null;
+
+        const failKey = `passkey-fail:${clientIp(request.headers) ?? "unknown"}`;
+        if (await tooMany(failKey, 20, 15 * MINUTE)) throw new TooManyAttempts();
+
+        try {
+          const result = await finishAuthentication(
+            challengeId,
+            JSON.parse(raw) as AuthenticationResponseJSON,
+            relyingPartyFrom(request.headers)
+          );
+          if (emailEnabled() && !result.emailVerifiedAt) throw new EmailNotVerified();
+          return { id: result.userId, email: result.email };
+        } catch (err) {
+          if (err instanceof EmailNotVerified) throw err;
+          await recordHits([failKey]);
+          return null;
+        }
+      },
+    }),
     Credentials({
       credentials: {
         email: { label: "Email", type: "email" },

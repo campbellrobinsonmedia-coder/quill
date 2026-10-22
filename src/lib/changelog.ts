@@ -239,6 +239,15 @@ export const CHANGELOG: ChangelogRelease[] = [
       "Fixed: the log-in form no longer clears your email after a wrong PIN",
     ],
   },
+  {
+    version: "v23",
+    title: "Passkeys",
+    items: [
+      "Sign in with a passkey — Face ID, a fingerprint, or your device's screen lock — from the log-in page, with no email or PIN to type",
+      "Settings → Passkeys: add one for each phone or laptop, name them, see when each was last used, and remove any (your PIN keeps working as a backup)",
+      "Each sign-in signs a fresh one-time challenge, so a passkey can't be guessed, phished, or replayed; a passkey only works on the site it was made for, and a cloned device is caught by its counter going backwards",
+    ],
+  },
 ];
 
 // Not built yet — discussed and agreed as direction, not a fixed commitment.
@@ -247,7 +256,7 @@ export const ROADMAP: string[] = [
   "Backup as a zipped FDX + Fountain bundle, and embedding uploaded files (JSON backup and restore exist today)",
   "Air order vs. production order for episodes",
   "Offline-first drafting (local queue, sync on reconnect)",
-  "Passkeys (sign in with your phone or laptop instead of a PIN) and a sign-out-everywhere option",
+  "Sign out of all devices (and a session list), plus step-up checks before sensitive changes",
   "Read-only, watermarked share links for sending drafts to collaborators",
   "Character relationship map (visual graph)",
   "Structural gap-checks (a storyline thread that never resolves, an act with no midpoint)",

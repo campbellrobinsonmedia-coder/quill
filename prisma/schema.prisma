@@ -36,6 +36,7 @@ model User {
   series      Series[]
   writingDays WritingDay[]
   authTokens  AuthToken[]
+  passkeys    Passkey[]
 }
 
 enum AuthTokenKind {
@@ -56,6 +57,46 @@ model AuthToken {
   createdAt DateTime      @default(now())
 
   @@index([userId, kind])
+}
+
+// A WebAuthn credential (a passkey) registered by a user: the public half of a
+// key pair whose private half never leaves their device.
+model Passkey {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // base64url credential id, as the browser reports it
+  credentialId String    @unique
+  publicKey    Bytes
+  // Signature counter; a BigInt because authenticators use a 32-bit unsigned one.
+  counter      BigInt    @default(0)
+  deviceType   String
+  backedUp     Boolean   @default(false)
+  transports   String[]  @default([])
+  name         String
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime?
+
+  @@index([userId])
+}
+
+enum PasskeyChallengeKind {
+  REGISTER
+  AUTHENTICATE
+}
+
+// A one-time random challenge handed out before a passkey ceremony and
+// consumed when the response comes back. For registration it's tied to the
+// signed-in user.
+model PasskeyChallenge {
+  id        String               @id @default(cuid())
+  kind      PasskeyChallengeKind
+  challenge String
+  userId    String?
+  expiresAt DateTime
+  createdAt DateTime             @default(now())
+
+  @@index([expiresAt])
 }
 
 // One row per failed login, keyed by "email:<addr>" or "ip:<addr>", used to
