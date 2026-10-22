@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidateShell } from "@/lib/revalidate-shell";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -34,6 +35,7 @@ export async function createSeries(formData: FormData) {
     },
   });
 
+  revalidateShell();
   revalidatePath("/series");
   redirect(`/series/${series.id}`);
 }
@@ -47,6 +49,7 @@ export async function updateSeriesMeta(
     where: { id: seriesId, userId },
     data,
   });
+  revalidateShell();
   revalidatePath(`/series/${seriesId}`);
   revalidatePath("/series");
 }
@@ -60,6 +63,7 @@ export async function setSeriesStatus(
     where: { id: seriesId, userId },
     data: { status },
   });
+  revalidateShell();
   revalidatePath("/dashboard");
 }
 
@@ -74,6 +78,7 @@ export async function deleteSeries(seriesId: string) {
   }
 
   await prisma.series.delete({ where: { id: seriesId } });
+  revalidateShell();
   revalidatePath("/dashboard");
 }
 
@@ -99,5 +104,6 @@ export async function createSeason(seriesId: string, title?: string) {
     },
   });
 
+  revalidateShell();
   revalidatePath(`/series/${seriesId}`);
 }

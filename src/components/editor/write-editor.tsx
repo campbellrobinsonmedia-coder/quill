@@ -430,9 +430,9 @@ export function WriteEditor({
               </li>
               <li>
                 <span className="font-medium text-neutral-900 dark:text-neutral-100">
-                  Outline
+                  Plan
                 </span>{" "}
-                tab holds your index cards for planning structure.
+                tab holds your beats and index cards for planning structure.
               </li>
               <li>
                 <span className="font-medium text-neutral-900 dark:text-neutral-100">

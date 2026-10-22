@@ -7,12 +7,12 @@ export function ProjectTabNav({ projectId }: { projectId: string }) {
   const pathname = usePathname();
   const base = `/projects/${projectId}`;
   const tabs = [
-    { href: base, label: "Outline" },
+    { href: base, label: "Plan" },
     { href: `${base}/characters`, label: "Characters" },
     { href: `${base}/world`, label: "World" },
     { href: `${base}/ideas`, label: "Ideas" },
     { href: `${base}/write`, label: "Write" },
-    { href: `${base}/reports`, label: "Reports" },
+    { href: `${base}/reports`, label: "Review" },
     { href: `${base}/settings`, label: "Settings" },
   ];
 

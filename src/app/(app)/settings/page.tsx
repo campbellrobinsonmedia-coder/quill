@@ -53,7 +53,7 @@ export default async function SettingsPage() {
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-neutral-500">Keyboard shortcuts</h2>
         <ul className="space-y-1 text-sm text-neutral-600 dark:text-neutral-400">
-          <li><kbd className="rounded border border-neutral-300 px-1.5 text-xs dark:border-neutral-700">/</kbd> Search everything</li>
+          <li><kbd className="rounded border border-neutral-300 px-1.5 text-xs dark:border-neutral-700">/</kbd> or <kbd className="rounded border border-neutral-300 px-1.5 text-xs dark:border-neutral-700">⌘K</kbd> Jump to any script, series or episode, or search</li>
           <li><kbd className="rounded border border-neutral-300 px-1.5 text-xs dark:border-neutral-700">i</kbd> Quick-add an idea</li>
           <li><kbd className="rounded border border-neutral-300 px-1.5 text-xs dark:border-neutral-700">Esc</kbd> Close the quick-add box</li>
         </ul>

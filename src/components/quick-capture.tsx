@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { createIdea } from "@/app/actions/ideas";
 import { useToast } from "@/components/toast";
+import { emitShellEvent, OPEN_PALETTE_EVENT, QUICK_CAPTURE_EVENT } from "@/lib/shell-events";
 
 const PROJECT_PATH = /^\/projects\/([^/]+)/;
 
@@ -19,7 +20,6 @@ function isTypingTarget(el: EventTarget | null): boolean {
 
 export function QuickCapture() {
   const pathname = usePathname();
-  const router = useRouter();
   const toast = useToast();
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
@@ -37,15 +37,22 @@ export function QuickCapture() {
       if (e.metaKey || e.ctrlKey || e.altKey || isTypingTarget(e.target)) return;
       if (e.key === "/") {
         e.preventDefault();
-        router.push("/search");
+        emitShellEvent(OPEN_PALETTE_EVENT);
       } else if (e.key === "i" && !hidden) {
         e.preventDefault();
         setOpen(true);
       }
     }
+    function onQuickCapture() {
+      if (!hidden) setOpen(true);
+    }
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [router, hidden]);
+    window.addEventListener(QUICK_CAPTURE_EVENT, onQuickCapture);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener(QUICK_CAPTURE_EVENT, onQuickCapture);
+    };
+  }, [hidden]);
 
   useEffect(() => {
     if (open) textareaRef.current?.focus();

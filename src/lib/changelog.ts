@@ -164,6 +164,18 @@ export const CHANGELOG: ChangelogRelease[] = [
       "Read aloud stops when you leave the page",
     ],
   },
+  {
+    version: "v16",
+    title: "App shell",
+    items: [
+      "Sidebar with your whole workspace: Today, the idea inbox (with a count), every series → season → episode, and standalone scripts — opens to wherever you are",
+      "Jump-to palette (⌘K / Ctrl+K, or /): type to go straight to any script, series, season or episode, or fall through to full-text search",
+      "Phone menu drawer replaces the cramped header links; the sidebar starts hidden on the writing page and remembers your choice",
+      "Today home: continue writing, word goal, and a quick-add idea inbox",
+      "Project tabs renamed Plan and Review",
+      "Sidebar updates immediately when you add, archive or delete things",
+    ],
+  },
 ];
 
 // Not built yet — discussed and agreed as direction, not a fixed commitment.

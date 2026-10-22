@@ -10,9 +10,11 @@ import { DeleteProjectButton } from "./delete-project-button";
 import { DeleteSeriesButton } from "./delete-series-button";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import { WritingGoalCard } from "@/components/writing-goal-card";
+import { QuickAddIdea } from "@/components/quick-add-idea";
+import { SectionHeading } from "@/components/ui";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Projects" };
+export const metadata: Metadata = { title: "Today" };
 
 type ListItem = {
   kind: "script" | "series";
@@ -27,7 +29,7 @@ type ListItem = {
 export default async function DashboardPage() {
   const userId = await requireUserId();
 
-  const [projects, series, mostRecentDraft] = await Promise.all([
+  const [projects, series, mostRecentDraft, inboxIdeas, inboxCount] = await Promise.all([
     prisma.project.findMany({
       where: { userId, seasonId: null },
       orderBy: { updatedAt: "desc" },
@@ -52,6 +54,15 @@ export default async function DashboardPage() {
           select: { number: true, series: { select: { title: true } } },
         },
       },
+    }),
+    prisma.idea.findMany({
+      where: { userId, projectId: null, seriesId: null, seasonId: null },
+      orderBy: { createdAt: "desc" },
+      take: 3,
+      select: { id: true, content: true },
+    }),
+    prisma.idea.count({
+      where: { userId, projectId: null, seriesId: null, seasonId: null },
     }),
   ]);
 
@@ -129,6 +140,31 @@ export default async function DashboardPage() {
 
       <WritingGoalCard userId={userId} />
 
+      <section className="space-y-3">
+        <SectionHeading
+          action={
+            <Link
+              href="/ideas"
+              className="text-xs text-neutral-500 underline underline-offset-2 hover:text-neutral-900 dark:hover:text-neutral-100"
+            >
+              Open inbox{inboxCount > 0 ? ` (${inboxCount})` : ""}
+            </Link>
+          }
+        >
+          Idea inbox
+        </SectionHeading>
+        <QuickAddIdea />
+        {inboxIdeas.length > 0 && (
+          <ul className="divide-y divide-neutral-200 rounded-md border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+            {inboxIdeas.map((idea) => (
+              <li key={idea.id} className="line-clamp-2 p-3 text-sm">
+                {idea.content}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       <section className="flex gap-3">
         <CollapsibleSection label="New script">
           <NewProjectForm />
@@ -140,7 +176,7 @@ export default async function DashboardPage() {
 
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-neutral-500">
-          Projects ({active.length})
+          All projects ({active.length})
         </h2>
         {active.length === 0 ? (
           <p className="text-sm text-neutral-500">

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidateShell } from "@/lib/revalidate-shell";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 
@@ -21,6 +22,7 @@ export async function createIdea(content: string, projectId: string | null) {
     data: { userId, projectId, content: trimmed },
   });
 
+  revalidateShell();
   revalidatePath("/ideas");
   if (projectId) revalidatePath(`/projects/${projectId}/ideas`);
 }
@@ -32,6 +34,7 @@ export async function deleteIdea(ideaId: string) {
 
   await prisma.idea.delete({ where: { id: ideaId } });
 
+  revalidateShell();
   revalidatePath("/ideas");
   if (idea.projectId) revalidatePath(`/projects/${idea.projectId}/ideas`);
   if (idea.seriesId) revalidatePath(`/series/${idea.seriesId}/ideas`);
@@ -65,6 +68,7 @@ export async function createSeriesIdea(
     },
   });
 
+  revalidateShell();
   revalidatePath(`/series/${seriesId}/ideas`);
   if (scope?.seasonId) revalidatePath(`/series/${seriesId}/seasons/${scope.seasonId}`);
   if (scope?.projectId) revalidatePath(`/projects/${scope.projectId}/ideas`);
@@ -86,6 +90,7 @@ export async function updateIdeaScope(
     },
   });
 
+  revalidateShell();
   revalidatePath(`/series/${idea.seriesId}/ideas`);
   if (idea.seasonId) revalidatePath(`/series/${idea.seriesId}/seasons/${idea.seasonId}`);
   if (scope.seasonId) revalidatePath(`/series/${idea.seriesId}/seasons/${scope.seasonId}`);
@@ -106,6 +111,7 @@ export async function promoteIdea(ideaId: string, projectId: string) {
     data: { projectId },
   });
 
+  revalidateShell();
   revalidatePath("/ideas");
   revalidatePath(`/projects/${projectId}/ideas`);
 }

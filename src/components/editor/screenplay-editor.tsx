@@ -728,7 +728,7 @@ export function ScreenplayEditor({
                 type="button"
                 onClick={() => setType(focusedIndex, b.type)}
                 aria-pressed={focusedEl.type === b.type}
-                className={`h-10 min-w-14 shrink-0 rounded-md border px-2 text-sm ${
+                className={`h-10 min-w-12 shrink-0 rounded-md border px-1.5 text-[13px] ${
                   focusedEl.type === b.type
                     ? "border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900"
                     : "border-neutral-300 dark:border-neutral-700"
@@ -744,7 +744,7 @@ export function ScreenplayEditor({
                 setOpenCommentFor(openCommentFor === focusedEl.id ? null : focusedEl.id);
                 setNewCommentText("");
               }}
-              className="h-10 min-w-14 shrink-0 rounded-md border border-neutral-300 px-2 text-sm dark:border-neutral-700"
+              className="h-10 min-w-12 shrink-0 rounded-md border border-neutral-300 px-1.5 text-[13px] dark:border-neutral-700"
             >
               Note
             </button>
@@ -752,7 +752,7 @@ export function ScreenplayEditor({
               <button
                 type="button"
                 onClick={() => toggleOmitted(focusedIndex)}
-                className="h-10 min-w-14 shrink-0 rounded-md border border-neutral-300 px-2 text-sm dark:border-neutral-700"
+                className="h-10 min-w-12 shrink-0 rounded-md border border-neutral-300 px-1.5 text-[13px] dark:border-neutral-700"
               >
                 Omit
               </button>
@@ -761,7 +761,7 @@ export function ScreenplayEditor({
               <button
                 type="button"
                 onClick={() => pairDualDialogue(focusedIndex)}
-                className="h-10 min-w-14 shrink-0 rounded-md border border-neutral-300 px-2 text-sm dark:border-neutral-700"
+                className="h-10 min-w-12 shrink-0 rounded-md border border-neutral-300 px-1.5 text-[13px] dark:border-neutral-700"
               >
                 Dual
               </button>

@@ -14,7 +14,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   const project = await getProjectOrNotFound(id);
-  return { title: `Outline · ${project.title}` };
+  return { title: `Plan · ${project.title}` };
 }
 
 export default async function OutlinePage({

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidateShell } from "@/lib/revalidate-shell";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -48,6 +49,7 @@ export async function createProject(formData: FormData) {
     },
   });
 
+  revalidateShell();
   revalidatePath("/dashboard");
   redirect(`/projects/${project.id}`);
 }
@@ -88,6 +90,7 @@ export async function createOnboardingProject(data: {
     },
   });
 
+  revalidateShell();
   revalidatePath("/dashboard");
   redirect(`/projects/${project.id}/write?intro=1`);
 }
@@ -145,6 +148,7 @@ export async function createEpisode(seasonId: string, formData: FormData) {
     },
   });
 
+  revalidateShell();
   revalidatePath(`/series/${season.seriesId}`);
   revalidatePath(`/series/${season.seriesId}/seasons/${seasonId}`);
   redirect(`/projects/${project.id}`);
@@ -159,6 +163,7 @@ export async function setProjectStatus(
     where: { id: projectId, userId },
     data: { status },
   });
+  revalidateShell();
   revalidatePath("/dashboard");
 }
 
@@ -173,6 +178,7 @@ export async function deleteProject(projectId: string) {
   }
 
   await prisma.project.delete({ where: { id: projectId } });
+  revalidateShell();
   revalidatePath("/dashboard");
 }
 
@@ -194,6 +200,7 @@ export async function updateProjectMeta(
     where: { id: projectId, userId },
     data,
   });
+  revalidateShell();
   revalidatePath(`/projects/${projectId}`);
   revalidatePath(`/projects/${projectId}/write`);
   revalidatePath(`/projects/${projectId}/settings`);
