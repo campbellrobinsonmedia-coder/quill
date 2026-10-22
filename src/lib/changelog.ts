@@ -248,6 +248,17 @@ export const CHANGELOG: ChangelogRelease[] = [
       "Each sign-in signs a fresh one-time challenge, so a passkey can't be guessed, phished, or replayed; a passkey only works on the site it was made for, and a cloned device is caught by its counter going backwards",
     ],
   },
+  {
+    version: "v24",
+    title: "Scene cards, redesigned",
+    items: [
+      "Cards on the Plan board are now real index cards: scene heading (from the linked scene, or the location), title, what happens, the turn, character initials, storyline chip and emotion — nothing clipped to a title",
+      "New \"turn\" field on every card: what changes in the scene (hope → doubt, a secret kept → exposed)",
+      "Clicking a card opens a side panel to edit it (a full-screen sheet on a phone) instead of expanding the card in place, so the board doesn't jump around; Esc closes it and Ctrl/⌘+Enter saves",
+      "The dot is the drag handle; a card flagged as pointing at a deleted scene shows it on its face",
+      "Backup and restore, and search, include the new field",
+    ],
+  },
 ];
 
 // Not built yet — discussed and agreed as direction, not a fixed commitment.

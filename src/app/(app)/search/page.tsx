@@ -103,7 +103,12 @@ export default async function SearchPage({
         prisma.outlineCard.findMany({
           where: {
             project: { userId },
-            OR: [{ title: contains }, { summary: contains }, { location: contains }],
+            OR: [
+              { title: contains },
+              { summary: contains },
+              { turn: contains },
+              { location: contains },
+            ],
           },
           select: { id: true, title: true, summary: true, projectId: true },
           take: MAX_PER_GROUP,

@@ -40,6 +40,7 @@ export default async function OutlinePage({
         id: true,
         title: true,
         summary: true,
+        turn: true,
         colorTag: true,
         act: true,
         location: true,

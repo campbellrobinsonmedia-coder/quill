@@ -1,17 +1,16 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useToast } from "@/components/toast";
 import Link from "next/link";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { updateCard, deleteCard } from "@/app/actions/outline";
-import { OUTLINE_COLORS, swatchFor } from "@/lib/outline-colors";
+import { swatchFor } from "@/lib/outline-colors";
+import { cardHeading, initials, splitCharacters } from "@/lib/card-face";
 
 export type OutlineCardData = {
   id: string;
   title: string;
   summary: string | null;
+  turn: string | null;
   colorTag: string | null;
   act: string | null;
   location: string | null;
@@ -22,44 +21,30 @@ export type OutlineCardData = {
   characters: { id: string; name: string }[];
 };
 
+// What a scene card looks like on the Plan board: everything you need to judge
+// the scene at a glance. Editing happens in the side panel (card-editor.tsx);
+// clicking the card opens it, and the dot is the drag handle.
 export function OutlineCard({
   card,
   number,
   projectId,
-  availableCharacters,
-  availableScenes = [],
-  beatOptions = [],
   sceneLabel,
   sceneMissing = false,
+  active = false,
+  onOpen,
 }: {
   card: OutlineCardData;
   number: number;
   projectId: string;
-  availableCharacters: { id: string; name: string }[];
-  availableScenes?: { id: string; label: string }[];
-  beatOptions?: { id: string; title: string }[];
   /** Label of the script scene this card is linked to, e.g. "3. INT. ATTIC - DAY". */
   sceneLabel?: string;
   /** The linked scene no longer exists in the script. */
   sceneMissing?: boolean;
+  active?: boolean;
+  onOpen: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: card.id, data: { type: "card" } });
-  const [editing, setEditing] = useState(false);
-  const [title, setTitle] = useState(card.title);
-  const [summary, setSummary] = useState(card.summary ?? "");
-  const [act, setAct] = useState(card.act ?? "");
-  const [location, setLocation] = useState(card.location ?? "");
-  const [emotion, setEmotion] = useState(card.emotion ?? "");
-  const [storyThread, setStoryThread] = useState(card.storyThread ?? "");
-  const [linkedSceneId, setLinkedSceneId] = useState(card.linkedSceneId ?? "");
-  const [colorTag, setColorTag] = useState(card.colorTag ?? "neutral");
-  const [beatId, setBeatId] = useState(card.beatId ?? "");
-  const [characterIds, setCharacterIds] = useState(
-    new Set(card.characters.map((c) => c.id))
-  );
-  const [isPending, startTransition] = useTransition();
-  const toast = useToast();
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -67,278 +52,107 @@ export function OutlineCard({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  function toggleCharacter(id: string) {
-    setCharacterIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function save() {
-    startTransition(async () => {
-      await updateCard(card.id, {
-        title: title.trim() || "Untitled",
-        summary,
-        act: act || null,
-        location: location || null,
-        emotion: emotion || null,
-        storyThread: storyThread || null,
-        linkedSceneId: linkedSceneId || null,
-        beatId: beatOptions.length > 0 ? beatId || null : undefined,
-        colorTag,
-        characterIds: Array.from(characterIds),
-      });
-      setEditing(false);
-    });
-  }
+  const heading = cardHeading({ sceneLabel: sceneMissing ? null : sceneLabel, location: card.location });
+  const { shown, extra } = splitCharacters(card.characters, 4);
+  const blank = !card.summary && !card.turn;
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="flex w-full flex-col gap-2 rounded-md border border-neutral-200 bg-white p-3 shadow-sm dark:border-neutral-800 dark:bg-neutral-900"
+      role="button"
+      tabIndex={0}
+      aria-label={`Scene card ${number}: ${card.title}. Open to edit.`}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+      className={`flex w-full cursor-pointer flex-col gap-1.5 rounded-md border bg-white p-3 text-left shadow-sm transition-shadow hover:shadow-md dark:bg-neutral-900 ${
+        active
+          ? "border-neutral-900 ring-1 ring-neutral-900 dark:border-white dark:ring-white"
+          : "border-neutral-200 dark:border-neutral-800"
+      }`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <span className="mt-1.5 shrink-0 text-xs font-medium tabular-nums text-neutral-500 dark:text-neutral-400">
+      <div className="flex items-center gap-1.5">
+        <span className="shrink-0 text-xs font-medium tabular-nums text-neutral-500 dark:text-neutral-400">
           {number}
         </span>
         <div
           {...attributes}
           {...listeners}
-          className="flex shrink-0 touch-none select-none items-center justify-center rounded p-2.5 cursor-grab sm:p-1.5 active:cursor-grabbing hover:bg-neutral-100 dark:hover:bg-neutral-800"
+          onClick={(e) => e.stopPropagation()}
+          className="-my-1 flex shrink-0 cursor-grab touch-none select-none items-center justify-center rounded p-2.5 hover:bg-neutral-100 active:cursor-grabbing sm:p-1.5 dark:hover:bg-neutral-800"
           title="Drag to reorder"
         >
           <div
             className="h-3 w-3 rounded-full"
-            style={{ backgroundColor: swatchFor(colorTag) }}
+            style={{ backgroundColor: swatchFor(card.colorTag) }}
           />
         </div>
-        {!editing ? (
-          <button
-            onClick={() => setEditing(true)}
-            className="min-w-0 flex-1 text-left"
+        <p className="min-w-0 flex-1 truncate text-[11px] font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+          {heading ?? ""}
+        </p>
+        {card.storyThread && (
+          <span
+            title={`Storyline ${card.storyThread}`}
+            className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
           >
-            <p className="truncate text-sm font-medium">{card.title}</p>
-            {(card.act || card.storyThread) && (
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {[card.act, card.storyThread && `Thread ${card.storyThread}`]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </p>
-            )}
-          </button>
-        ) : (
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="min-w-0 flex-1 rounded border border-neutral-300 px-2 py-1 text-sm outline-none dark:border-neutral-700 dark:bg-neutral-900"
-          />
+            {card.storyThread}
+          </span>
         )}
       </div>
 
-      {!editing ? (
-        <>
-          {card.summary && (
-            <p className="whitespace-pre-wrap text-xs text-neutral-500 line-clamp-4">
-              {card.summary}
-            </p>
-          )}
-          {(card.location || card.emotion) && (
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              {[card.location, card.emotion].filter(Boolean).join(" · ")}
-            </p>
+      <p className="text-sm font-medium leading-snug">{card.title}</p>
+
+      {card.summary && (
+        <p className="line-clamp-3 whitespace-pre-wrap text-xs text-neutral-600 dark:text-neutral-400">
+          {card.summary}
+        </p>
+      )}
+      {card.turn && (
+        <p className="line-clamp-2 text-xs italic text-neutral-500 dark:text-neutral-400">
+          <span aria-hidden>↳ </span>
+          {card.turn}
+        </p>
+      )}
+      {blank && (
+        <p className="text-xs text-neutral-400 dark:text-neutral-500">
+          Open to add what happens and the turn
+        </p>
+      )}
+
+      {(shown.length > 0 || card.linkedSceneId || card.emotion) && (
+        <div className="flex flex-wrap items-center gap-1 pt-0.5">
+          {shown.map((c) => (
+            <span
+              key={c.id}
+              title={c.name}
+              className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-neutral-100 px-1 text-[10px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
+            >
+              {initials(c.name)}
+            </span>
+          ))}
+          {extra > 0 && <span className="text-[10px] text-neutral-500">+{extra}</span>}
+          {card.emotion && (
+            <span className="text-[11px] text-neutral-500 dark:text-neutral-400">{card.emotion}</span>
           )}
           {card.linkedSceneId && !sceneMissing && (
             <Link
               href={`/projects/${projectId}/write?scene=${card.linkedSceneId}`}
-              className="block truncate text-xs text-neutral-500 underline underline-offset-2 hover:text-neutral-900 dark:hover:text-neutral-100"
+              onClick={(e) => e.stopPropagation()}
+              className="ml-auto text-[11px] text-neutral-500 underline underline-offset-2 hover:text-neutral-900 dark:hover:text-neutral-100"
             >
-              → {sceneLabel ?? "Go to scene"}
+              → scene
             </Link>
           )}
           {card.linkedSceneId && sceneMissing && (
-            <p className="text-xs text-amber-700 dark:text-amber-400">
-              Its scene was removed from the script.{" "}
-              <button
-                type="button"
-                disabled={isPending}
-                onClick={() =>
-                  startTransition(async () => {
-                    try {
-                      await updateCard(card.id, { linkedSceneId: null });
-                    } catch {
-                      toast.error("Couldn't unlink — try again");
-                    }
-                  })
-                }
-                className="underline underline-offset-2"
-              >
-                Unlink
-              </button>
-            </p>
+            <span className="ml-auto text-[11px] text-amber-700 dark:text-amber-400">
+              scene removed
+            </span>
           )}
-          {card.characters.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {card.characters.map((c) => (
-                <span
-                  key={c.id}
-                  className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
-                >
-                  {c.name}
-                </span>
-              ))}
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="space-y-2">
-          <textarea
-            value={summary}
-            onChange={(e) => setSummary(e.target.value)}
-            placeholder="Beat summary…"
-            rows={3}
-            className="w-full resize-none rounded border border-neutral-300 px-2 py-1 text-xs outline-none dark:border-neutral-700 dark:bg-neutral-900"
-          />
-          <div className="flex gap-2">
-            <input
-              value={act}
-              onChange={(e) => setAct(e.target.value)}
-              placeholder="Act (e.g. Act 2)"
-              className="w-1/2 rounded border border-neutral-300 px-2 py-1 text-xs outline-none dark:border-neutral-700 dark:bg-neutral-900"
-            />
-            <input
-              value={storyThread}
-              onChange={(e) => setStoryThread(e.target.value)}
-              placeholder="Storyline (A/B/C)"
-              list="story-thread-suggestions"
-              className="w-1/2 rounded border border-neutral-300 px-2 py-1 text-xs outline-none dark:border-neutral-700 dark:bg-neutral-900"
-            />
-            <datalist id="story-thread-suggestions">
-              <option value="A" />
-              <option value="B" />
-              <option value="C" />
-            </datalist>
-          </div>
-          {beatOptions.length > 0 && (
-            <select
-              value={beatId}
-              onChange={(e) => setBeatId(e.target.value)}
-              aria-label="Beat"
-              className="w-full rounded border border-neutral-300 px-2 py-1 text-xs outline-none dark:border-neutral-700 dark:bg-neutral-900"
-            >
-              <option value="">Unplanned (no beat)</option>
-              {beatOptions.map((b) => (
-                <option key={b.id} value={b.id}>
-                  Beat: {b.title}
-                </option>
-              ))}
-            </select>
-          )}
-          {availableScenes.length > 0 && (
-            <select
-              value={linkedSceneId}
-              onChange={(e) => setLinkedSceneId(e.target.value)}
-              className="w-full rounded border border-neutral-300 px-2 py-1 text-xs outline-none dark:border-neutral-700 dark:bg-neutral-900"
-            >
-              <option value="">Not linked to a scene</option>
-              {availableScenes.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          )}
-          <div className="flex gap-2">
-            <input
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="Location"
-              className="w-1/2 rounded border border-neutral-300 px-2 py-1 text-xs outline-none dark:border-neutral-700 dark:bg-neutral-900"
-            />
-            <input
-              value={emotion}
-              onChange={(e) => setEmotion(e.target.value)}
-              placeholder="Emotion"
-              className="w-1/2 rounded border border-neutral-300 px-2 py-1 text-xs outline-none dark:border-neutral-700 dark:bg-neutral-900"
-            />
-          </div>
-
-          {availableCharacters.length > 0 && (
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-neutral-500">
-                Characters in scene
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {availableCharacters.map((c) => {
-                  const selected = characterIds.has(c.id);
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => toggleCharacter(c.id)}
-                      className={`rounded-full border px-2 py-0.5 text-xs ${
-                        selected
-                          ? "border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900"
-                          : "border-neutral-300 text-neutral-600 dark:border-neutral-700 dark:text-neutral-400"
-                      }`}
-                    >
-                      {c.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          <div className="flex flex-wrap gap-1.5">
-            {OUTLINE_COLORS.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                title={c.label}
-                onClick={() => setColorTag(c.id)}
-                className={`h-5 w-5 rounded-full ${
-                  colorTag === c.id ? "ring-2 ring-offset-1 ring-neutral-900 dark:ring-white" : ""
-                }`}
-                style={{ backgroundColor: c.swatch }}
-              />
-            ))}
-          </div>
-          <div className="flex justify-between gap-2 pt-1">
-            <button
-              onClick={() => {
-                if (!window.confirm("Delete this outline card?")) return;
-                startTransition(async () => {
-                  try {
-                    await deleteCard(card.id);
-                    toast.success("Card deleted");
-                  } catch {
-                    toast.error("Couldn't delete — try again");
-                  }
-                });
-              }}
-              className="text-xs text-neutral-500 dark:text-neutral-400 hover:text-red-600"
-            >
-              Delete
-            </button>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setEditing(false)}
-                className="text-xs text-neutral-500"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={save}
-                disabled={isPending}
-                className="rounded bg-neutral-900 px-2 py-1 text-xs font-medium text-white disabled:opacity-60 dark:bg-white dark:text-neutral-900"
-              >
-                Save
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </div>

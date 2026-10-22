@@ -54,6 +54,7 @@ export async function updateCard(
   data: {
     title?: string;
     summary?: string;
+    turn?: string | null;
     colorTag?: string | null;
     act?: string | null;
     location?: string | null;

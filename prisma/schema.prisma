@@ -288,6 +288,8 @@ model OutlineCard {
   project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   title         String
   summary       String?
+  // What changes in the scene (hope to doubt, secret kept to secret exposed).
+  turn          String?
   colorTag      String?
   act           String?
   location      String?

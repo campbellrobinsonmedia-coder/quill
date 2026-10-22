@@ -426,6 +426,7 @@ async function execute(db: Db, userId: string, plan: Plan, mode: RestoreMode) {
         beatId: parents.beatId,
         title: str(rec.title, "Untitled"),
         summary: readStr(rec.summary),
+        turn: readStr(rec.turn),
         colorTag: readStr(rec.colorTag),
         act: readStr(rec.act),
         location: readStr(rec.location),

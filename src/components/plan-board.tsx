@@ -22,6 +22,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { OutlineCard, type OutlineCardData } from "@/components/outline-card";
+import { CardEditor } from "@/components/card-editor";
 import { BeatColumn, UnplannedColumn, type PlanBeat } from "@/components/beat-column";
 import { Menu, MENU_ITEM } from "@/components/menu";
 import { useToast } from "@/components/toast";
@@ -122,6 +123,7 @@ export function PlanBoard({
 
   const [newBeat, setNewBeat] = useState("");
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
+  const [openCardId, setOpenCardId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -226,6 +228,7 @@ export function PlanBoard({
   const hasBeats = layout.beatIds.length > 0;
   const unplannedCount = layout.columns[UNPLANNED].length;
   const activeCard = activeCardId ? cardsById.get(activeCardId) : null;
+  const openCard = openCardId ? cardsById.get(openCardId) : null;
 
   function renderCard(id: string) {
     const card = cardsById.get(id);
@@ -236,11 +239,10 @@ export function PlanBoard({
         card={card}
         number={numbers.get(id) ?? 0}
         projectId={projectId}
-        availableCharacters={availableCharacters}
-        availableScenes={availableScenes}
-        beatOptions={beatOptions}
         sceneLabel={card.linkedSceneId ? sync?.sceneLabels[card.linkedSceneId] : undefined}
         sceneMissing={sync?.orphanedCardIds.includes(id) ?? false}
+        active={openCardId === id}
+        onOpen={() => setOpenCardId(id)}
       />
     );
   }
@@ -295,6 +297,19 @@ export function PlanBoard({
             ))}
           </ul>
         </details>
+      )}
+
+      {openCard && (
+        <CardEditor
+          key={openCard.id}
+          card={openCard}
+          number={numbers.get(openCard.id) ?? 0}
+          availableCharacters={availableCharacters}
+          availableScenes={availableScenes}
+          beatOptions={beatOptions}
+          sceneMissing={sync?.orphanedCardIds.includes(openCard.id) ?? false}
+          onClose={() => setOpenCardId(null)}
+        />
       )}
 
       <DndContext

@@ -88,6 +88,7 @@ async function seed(userId: string) {
       projectId: standalone.id,
       beatId: projectBeat.id,
       title: "Mara arrives",
+      turn: "Hope becomes doubt",
       order: 0,
       linkedSceneId: "scene-1",
       characters: { connect: [{ id: seriesCharacter.id }] },
@@ -223,6 +224,7 @@ describe.skipIf(!run)("backup restore (database)", () => {
       include: { characters: true },
     });
     expect(card.beatId).toBe(original.projectBeat.id);
+    expect(card.turn).toBe("Hope becomes doubt");
     expect(card.linkedSceneId).toBe("scene-1");
     expect(card.characters).toHaveLength(1);
 
