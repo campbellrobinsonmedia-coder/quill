@@ -15,6 +15,7 @@ import {
   type ScreenplayElementType,
 } from "@/lib/draft-content";
 import { useMediaQuery } from "@/lib/use-media-query";
+import { normalizeCueName } from "@/lib/cast";
 
 export type CommentData = {
   id: string;
@@ -121,6 +122,7 @@ export function ScreenplayEditor({
   onCreateComment,
   onUpdateComment,
   onDeleteComment,
+  onAddCharacter,
 }: {
   content: ScreenplayContent;
   onChange: (content: ScreenplayContent) => void;
@@ -135,6 +137,8 @@ export function ScreenplayEditor({
   onCreateComment?: (elementId: string, text: string) => void;
   onUpdateComment?: (id: string, data: { text?: string; resolved?: boolean }) => void;
   onDeleteComment?: (id: string) => void;
+  /** Offered when a character cue isn't in the saved cast yet. */
+  onAddCharacter?: (name: string) => void;
 }) {
   const elements = content.elements;
   const refs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
@@ -403,7 +407,14 @@ export function ScreenplayEditor({
             ? sceneHeadingSuggestions(el.text)
             : []
         : [];
-    if (suggestions.length === 0) return null;
+    const cue = normalizeCueName(el.text);
+    const unsaved =
+      focusedId === el.id &&
+      el.type === "character" &&
+      !!onAddCharacter &&
+      cue.length >= 3 &&
+      !characterNames.some((n) => normalizeCueName(n) === cue);
+    if (suggestions.length === 0 && !unsaved) return null;
     const left = el.type === "character" && !compact ? "2.2in" : "0";
     return (
       <div
@@ -423,6 +434,18 @@ export function ScreenplayEditor({
             {name}
           </button>
         ))}
+        {unsaved && (
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              onAddCharacter?.(cue);
+            }}
+            className="block w-full whitespace-nowrap px-2 py-1 text-left text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+          >
+            + Add “{cue}” to your cast
+          </button>
+        )}
       </div>
     );
   }

@@ -28,6 +28,8 @@ import { addCardsForScenes } from "@/app/actions/scene-sync";
 import { moveScene } from "@/lib/scene-sync";
 import { computeSceneNumbers } from "@/lib/draft-content";
 import { useToast } from "@/components/toast";
+import { createCharacter } from "@/app/actions/characters";
+import { normalizeCueName, titleCaseName } from "@/lib/cast";
 import { Menu, MENU_ITEM } from "@/components/menu";
 
 const AUTOSAVE_DELAY_MS = 1200;
@@ -72,6 +74,7 @@ export function WriteEditor({
   const [focusMode, setFocusMode] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showScenes, setShowScenes] = useState(false);
+  const [addedCast, setAddedCast] = useState<string[]>([]);
   const toast = useToast();
   const [versions, setVersions] = useState(initialVersions);
   const [sceneNumbersLocked, setSceneNumbersLocked] = useState(initialSceneNumbersLocked);
@@ -685,7 +688,20 @@ export function WriteEditor({
             <ScreenplayEditor
               content={content}
               onChange={(next) => setContent(next)}
-              characterNames={characterNames}
+              characterNames={[...characterNames, ...addedCast]}
+              onAddCharacter={(name) => {
+                const cue = normalizeCueName(name);
+                setAddedCast((prev) => [...prev, cue]);
+                startTransition(async () => {
+                  try {
+                    await createCharacter(projectId, titleCaseName(cue));
+                    toast.success(`${titleCaseName(cue)} added to your cast`);
+                  } catch {
+                    setAddedCast((prev) => prev.filter((n) => n !== cue));
+                    toast.error("Couldn't add to your cast — try again");
+                  }
+                });
+              }}
               locationSuggestions={locationSuggestions}
               sceneNumbersLocked={sceneNumbersLocked}
               revisionBaseline={revisionBaseline}

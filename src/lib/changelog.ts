@@ -208,6 +208,17 @@ export const CHANGELOG: ChangelogRelease[] = [
       "Fixed: on narrower screens the script page's white paper could end partway down the text",
     ],
   },
+  {
+    version: "v20",
+    title: "Cast and locations from the script",
+    items: [
+      "Characters page: a panel lists who speaks in your script but isn't saved yet, with lines and scenes — add them one at a time or all at once (episodes can add to the episode or the series bible)",
+      "World page: the same for locations used in scene headings, saved as Location notes",
+      "Saved characters and locations show live script stats: scenes, lines, words, first appearance, INT/EXT and day/night",
+      "In the editor, typing a character cue that isn't in your cast offers \"+ Add to your cast\" right there",
+      "(V.O.), (O.S.) and (CONT'D) are now counted as the same character in reports",
+    ],
+  },
 ];
 
 // Not built yet — discussed and agreed as direction, not a fixed commitment.

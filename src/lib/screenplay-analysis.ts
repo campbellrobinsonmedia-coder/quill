@@ -1,4 +1,5 @@
 import { computeSceneNumbers, groupScenes, type ScreenplayContent } from "@/lib/draft-content";
+import { normalizeCueName } from "@/lib/cast";
 
 export type SceneReportRow = {
   number: string;
@@ -25,6 +26,7 @@ export type CharacterReportRow = {
   sceneCount: number;
   lineCount: number;
   dialogueWordCount: number;
+  firstScene: string | null;
 };
 
 const HEADING_RE =
@@ -61,7 +63,11 @@ export function buildSceneReport(
       const heading = s.heading!;
       const { prefix, location, time } = parseSceneHeading(heading.text);
       const characters = Array.from(
-        new Set(s.body.filter((e) => e.type === "character" && e.text.trim()).map((e) => e.text.trim()))
+        new Set(
+          s.body
+            .filter((e) => e.type === "character" && normalizeCueName(e.text))
+            .map((e) => normalizeCueName(e.text))
+        )
       );
       const wordCount = s.body.reduce(
         (sum, e) => sum + (e.text.trim().match(/\S+/g)?.length ?? 0),
@@ -110,10 +116,16 @@ export function buildCharacterReport(
   const byName = new Map<string, CharacterReportRow>();
 
   function ensure(name: string): CharacterReportRow {
-    const key = name.trim().toUpperCase();
+    const key = normalizeCueName(name);
     const existing = byName.get(key);
     if (existing) return existing;
-    const fresh = { name: name.trim(), sceneCount: 0, lineCount: 0, dialogueWordCount: 0 };
+    const fresh = {
+      name: key,
+      sceneCount: 0,
+      lineCount: 0,
+      dialogueWordCount: 0,
+      firstScene: null as string | null,
+    };
     byName.set(key, fresh);
     return fresh;
   }
@@ -121,14 +133,16 @@ export function buildCharacterReport(
   for (const row of sceneRows) {
     if (row.omitted) continue;
     for (const name of row.characters) {
-      ensure(name).sceneCount += 1;
+      const entry = ensure(name);
+      entry.sceneCount += 1;
+      if (entry.firstScene === null) entry.firstScene = row.number;
     }
   }
 
   let currentCharacter: string | null = null;
   for (const el of content.elements) {
-    if (el.type === "character" && el.text.trim()) {
-      currentCharacter = el.text.trim();
+    if (el.type === "character" && normalizeCueName(el.text)) {
+      currentCharacter = el.text;
     } else if (["scene_heading", "action", "transition"].includes(el.type)) {
       // A cue only owns the dialogue that follows it directly.
       currentCharacter = null;

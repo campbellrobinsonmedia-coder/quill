@@ -12,6 +12,8 @@ export type CharacterData = {
   arcNotes: string | null;
   relationships: string | null;
   references?: ReferenceData[];
+  /** e.g. "12 scenes · 34 lines", computed from the script. */
+  stats?: string | null;
 };
 
 export function CharacterItem({ character }: { character: CharacterData }) {
@@ -39,7 +41,12 @@ export function CharacterItem({ character }: { character: CharacterData }) {
     return (
       <div className="rounded-md border border-neutral-200 p-4 dark:border-neutral-800">
         <div className="flex items-start justify-between gap-4">
-          <h3 className="font-medium">{character.name}</h3>
+          <div className="min-w-0">
+            <h3 className="font-medium">{character.name}</h3>
+            {character.stats && (
+              <p className="text-xs text-neutral-500">{character.stats}</p>
+            )}
+          </div>
           <button
             onClick={() => setEditing(true)}
             className="shrink-0 text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"

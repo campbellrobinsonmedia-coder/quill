@@ -11,6 +11,8 @@ export type WorldNoteData = {
   category: string | null;
   description: string | null;
   references?: ReferenceData[];
+  /** e.g. "3 scenes · 2 INT · 1 EXT", computed from the script. */
+  stats?: string | null;
 };
 
 const CATEGORY_SUGGESTIONS = ["Location", "Object", "Lore", "Rule", "Faction"];
@@ -43,6 +45,7 @@ export function WorldNoteItem({ note }: { note: WorldNoteData }) {
             {note.category && (
               <p className="text-xs text-neutral-500 dark:text-neutral-400">{note.category}</p>
             )}
+            {note.stats && <p className="text-xs text-neutral-500">{note.stats}</p>}
           </div>
           <button
             onClick={() => setEditing(true)}
