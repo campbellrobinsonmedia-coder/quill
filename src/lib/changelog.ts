@@ -281,6 +281,15 @@ export const CHANGELOG: ChangelogRelease[] = [
       "Backup and restore include card status and the page target",
     ],
   },
+  {
+    version: "v27",
+    title: "From card to scene and back",
+    items: [
+      "\"Start this scene in the script\" on a card makes the scene heading from the card's location, puts it in the script where the Plan board has the card, links it, and opens the script there",
+      "In the script's Scenes panel, each scene's card expands to show what happens, the turn, its status, pages and characters, with a link that opens the card on the Plan page",
+      "\"Update from scene\" on a card fills its location and characters from the script (who speaks in the scene); nothing changes until you save the card",
+    ],
+  },
 ];
 
 // Not built yet — discussed and agreed as direction, not a fixed commitment.

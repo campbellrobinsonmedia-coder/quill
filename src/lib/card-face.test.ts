@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cardHeading, initials, sceneHeadingFromLabel, splitCharacters } from "@/lib/card-face";
+import { cardHeading, headingForCard, initials, sceneHeadingFromLabel, splitCharacters } from "@/lib/card-face";
 
 describe("sceneHeadingFromLabel", () => {
   it("strips the scene number", () => {
@@ -39,5 +39,18 @@ describe("cardHeading", () => {
     expect(cardHeading({ sceneLabel: "2. INT. LAB - DAY", location: "attic" })).toBe("INT. LAB - DAY");
     expect(cardHeading({ location: "attic" })).toBe("ATTIC");
     expect(cardHeading({})).toBeNull();
+  });
+});
+
+describe("headingForCard", () => {
+  it("turns a location into a heading to edit", () => {
+    expect(headingForCard("Lamp room")).toBe("INT. LAMP ROOM - DAY");
+  });
+  it("keeps a heading the writer already typed", () => {
+    expect(headingForCard("ext. dock - night")).toBe("EXT. DOCK - NIGHT");
+  });
+  it("leaves an empty prefix to fill in when there's no location", () => {
+    expect(headingForCard(null)).toBe("INT. ");
+    expect(headingForCard("  ")).toBe("INT. ");
   });
 });

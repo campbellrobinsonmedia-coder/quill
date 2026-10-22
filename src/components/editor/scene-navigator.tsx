@@ -1,16 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import type { ScreenplayContent } from "@/lib/draft-content";
+import Link from "next/link";
+import { estimateScenePages, type ScreenplayContent } from "@/lib/draft-content";
+import { STATUS_LABELS, effectiveStatus } from "@/lib/plan-progress";
 
 export type OutlineCardInfo = {
   id: string;
   title: string;
+  summary: string | null;
+  turn: string | null;
+  status: string;
+  characters: string[];
   linkedSceneId: string | null;
   beatTitle: string | null;
 };
 
 export function SceneNavigator({
+  projectId,
   content,
   sceneNumbers,
   cards,
@@ -19,6 +26,7 @@ export function SceneNavigator({
   onAddCard,
   onClose,
 }: {
+  projectId: string;
   content: ScreenplayContent;
   sceneNumbers: Map<string, string>;
   cards: OutlineCardInfo[];
@@ -29,6 +37,7 @@ export function SceneNavigator({
 }) {
   const [adding, setAdding] = useState<string | null>(null);
   const scenes = content.elements.filter((el) => el.type === "scene_heading");
+  const pages = estimateScenePages(content.elements);
   const cardByScene = new Map(
     cards.filter((c) => c.linkedSceneId).map((c) => [c.linkedSceneId!, c])
   );
@@ -50,15 +59,18 @@ export function SceneNavigator({
         {scenes.map((scene, i) => {
           const card = cardByScene.get(scene.id);
           const text = scene.text.trim();
+          const stats = pages.get(scene.id);
+          const status = card ? effectiveStatus(card.status, stats) : null;
           return (
             <li
               key={scene.id}
               className="flex items-start gap-2 border-b border-neutral-100 p-3 text-sm dark:border-neutral-900"
             >
+              <div className="min-w-0 flex-1">
               <button
                 type="button"
                 onClick={() => onJump(scene.id)}
-                className="min-w-0 flex-1 text-left"
+                className="block w-full text-left"
               >
                 <p className={`truncate font-medium ${scene.omitted ? "line-through opacity-60" : ""}`}>
                   <span className="mr-1.5 tabular-nums text-neutral-500">
@@ -66,15 +78,42 @@ export function SceneNavigator({
                   </span>
                   {text || "Untitled scene"}
                 </p>
-                {card ? (
-                  <p className="truncate text-xs text-neutral-500">
+                {!card && text && <p className="text-xs text-neutral-500">No card on the Plan board</p>}
+              </button>
+              {card && (
+                <details className="group mt-0.5 text-xs text-neutral-500">
+                  <summary className="cursor-pointer truncate">
                     Card: {card.title}
                     {card.beatTitle ? ` · ${card.beatTitle}` : ""}
-                  </p>
-                ) : (
-                  text && <p className="text-xs text-neutral-500">No card on the Plan board</p>
-                )}
-              </button>
+                  </summary>
+                  <div className="mt-1 space-y-1 rounded-md bg-neutral-50 p-2 dark:bg-neutral-900">
+                    {card.summary && (
+                      <p className="whitespace-pre-wrap text-neutral-700 dark:text-neutral-300">
+                        {card.summary}
+                      </p>
+                    )}
+                    {card.turn && (
+                      <p className="italic">
+                        <span aria-hidden>↳ </span>
+                        {card.turn}
+                      </p>
+                    )}
+                    {!card.summary && !card.turn && <p>The card has no notes yet.</p>}
+                    <p>
+                      {status && status !== "idea" ? `${STATUS_LABELS[status]} · ` : ""}
+                      {stats && stats.pages >= 0.05 ? `${Math.round(stats.pages * 10) / 10} pp · ` : ""}
+                      {card.characters.length > 0 ? card.characters.join(", ") : "No characters set"}
+                    </p>
+                    <Link
+                      href={`/projects/${projectId}?card=${card.id}`}
+                      className="inline-block underline underline-offset-2 hover:text-neutral-900 dark:hover:text-neutral-100"
+                    >
+                      Open card
+                    </Link>
+                  </div>
+                </details>
+              )}
+              </div>
               <div className="flex shrink-0 items-center gap-0.5">
                 {!card && text && !scene.omitted && (
                   <button

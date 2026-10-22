@@ -119,6 +119,7 @@ export function PlanBoard({
   seasonBeats = [],
   sync = null,
   progress = null,
+  initialOpenCardId = null,
 }: {
   projectId: string;
   initialBeats: (PlanBeat & { order: number })[];
@@ -128,6 +129,8 @@ export function PlanBoard({
   seasonBeats?: OverviewBeat[];
   sync?: ScriptSync | null;
   progress?: PlanProgress | null;
+  /** Open this card's panel on arrival (a link from the script's Scenes panel). */
+  initialOpenCardId?: string | null;
 }) {
   const toast = useToast();
   const stacked = useMediaQuery("(max-width: 639px)");
@@ -155,7 +158,7 @@ export function PlanBoard({
 
   const [newBeat, setNewBeat] = useState("");
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
-  const [openCardId, setOpenCardId] = useState<string | null>(null);
+  const [openCardId, setOpenCardId] = useState<string | null>(initialOpenCardId);
 
   const [view, setView] = usePersistedChoice<PlanView>(
     `quill:plan-view:${projectId}`,
@@ -509,6 +512,8 @@ export function PlanBoard({
       {openCard && (
         <CardEditor
           key={openCard.id}
+          projectId={projectId}
+          canStartScene={sync !== null}
           card={openCard}
           number={numbers.get(openCard.id) ?? 0}
           availableCharacters={availableCharacters}

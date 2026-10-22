@@ -25,10 +25,13 @@ export async function generateMetadata({
 
 export default async function OutlinePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ card?: string }>;
 }) {
   const { id } = await params;
+  const { card: openCard } = await searchParams;
   const project = await getProjectOrNotFound(id);
 
   const season = project.seasonId
@@ -135,6 +138,7 @@ export default async function OutlinePage({
       seasonBeats={seasonBeats}
       sync={sync}
       progress={progress}
+      initialOpenCardId={cards.some((c) => c.id === openCard) ? openCard : null}
     />
   );
 }

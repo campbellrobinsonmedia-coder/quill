@@ -66,8 +66,12 @@ export default async function WritePage({
       select: {
         id: true,
         title: true,
+        summary: true,
+        turn: true,
+        status: true,
         linkedSceneId: true,
         beat: { select: { title: true } },
+        characters: { select: { name: true } },
       },
     }),
   ]);
@@ -89,6 +93,10 @@ export default async function WritePage({
       outlineCards={outlineCards.map((c) => ({
         id: c.id,
         title: c.title,
+        summary: c.summary,
+        turn: c.turn,
+        status: c.status,
+        characters: c.characters.map((ch) => ch.name),
         linkedSceneId: c.linkedSceneId,
         beatTitle: c.beat?.title ?? null,
       }))}

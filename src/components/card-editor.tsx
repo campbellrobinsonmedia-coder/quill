@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { deleteCard, updateCard } from "@/app/actions/outline";
+import { sceneFactsForCard, startSceneFromCard } from "@/app/actions/scene-sync";
 import { useToast } from "@/components/toast";
 import { OUTLINE_COLORS } from "@/lib/outline-colors";
 import { sceneHeadingFromLabel } from "@/lib/card-face";
@@ -14,6 +17,8 @@ const LABEL = "mb-1 block text-xs font-medium text-neutral-500 dark:text-neutral
 
 // The side panel for a scene card (a sheet that fills the screen on a phone).
 export function CardEditor({
+  projectId,
+  canStartScene,
   card,
   number,
   availableCharacters,
@@ -23,6 +28,9 @@ export function CardEditor({
   stat,
   onClose,
 }: {
+  projectId: string;
+  /** Screenplay projects: a card can start its scene in the script. */
+  canStartScene: boolean;
   card: OutlineCardData;
   number: number;
   availableCharacters: { id: string; name: string }[];
@@ -34,6 +42,8 @@ export function CardEditor({
   onClose: () => void;
 }) {
   const toast = useToast();
+  const router = useRouter();
+  const [saving, setSaving] = useState(false);
   const [isPending, startTransition] = useTransition();
   const titleRef = useRef<HTMLInputElement>(null);
 
@@ -63,27 +73,72 @@ export function CardEditor({
     });
   }
 
-  function save() {
+  function fields() {
+    return {
+      title: title.trim() || "Untitled",
+      summary,
+      turn: turn.trim() || null,
+      status,
+      act: act || null,
+      location: location || null,
+      emotion: emotion || null,
+      storyThread: storyThread || null,
+      linkedSceneId: linkedSceneId || null,
+      beatId: beatOptions.length > 0 ? beatId || null : undefined,
+      colorTag,
+      characterIds: Array.from(characterIds),
+    };
+  }
+
+  // Saves what's in the panel, then makes the scene in the script and opens it.
+  function startScene() {
     startTransition(async () => {
       try {
-        await updateCard(card.id, {
-          title: title.trim() || "Untitled",
-          summary,
-          turn: turn.trim() || null,
-          status,
-          act: act || null,
-          location: location || null,
-          emotion: emotion || null,
-          storyThread: storyThread || null,
-          linkedSceneId: linkedSceneId || null,
-          beatId: beatOptions.length > 0 ? beatId || null : undefined,
-          colorTag,
-          characterIds: Array.from(characterIds),
-        });
+        await updateCard(card.id, fields());
+        const { sceneId } = await startSceneFromCard(card.id);
+        router.push(`/projects/${projectId}/write?scene=${sceneId}`);
+      } catch {
+        toast.error("Couldn't start the scene — try again");
+      }
+    });
+  }
+
+  // Fills the location and characters from what the script says about the
+  // linked scene. It only fills the panel; Save keeps it.
+  function updateFromScene() {
+    startTransition(async () => {
+      try {
+        const facts = await sceneFactsForCard(card.id);
+        if (!facts) {
+          toast.error("Couldn't find that scene in the script");
+          return;
+        }
+        if (facts.location) {
+          setLocation((prev) => (prev.trim().toLowerCase() === facts.location.toLowerCase() ? prev : facts.location));
+        }
+        setCharacterIds((prev) => new Set([...prev, ...facts.characterIds]));
+        toast.success(
+          facts.unmatched.length > 0
+            ? `Filled from the scene — save to keep it. Not saved as characters: ${facts.unmatched.join(", ")}`
+            : "Filled from the scene — save to keep it"
+        );
+      } catch {
+        toast.error("Couldn't read the scene — try again");
+      }
+    });
+  }
+
+  function save() {
+    setSaving(true);
+    startTransition(async () => {
+      try {
+        await updateCard(card.id, fields());
         toast.success("Card saved");
         onClose();
       } catch {
         toast.error("Couldn't save the card — try again");
+      } finally {
+        setSaving(false);
       }
     });
   }
@@ -295,11 +350,12 @@ export function CardEditor({
           </div>
         )}
 
-        {availableScenes.length > 0 && (
+        {(availableScenes.length > 0 || canStartScene) && (
           <div>
             <label htmlFor="card-scene" className={LABEL}>
               Scene in the script
             </label>
+            {availableScenes.length > 0 && (
             <select
               id="card-scene"
               value={linkedExists ? linkedSceneId : ""}
@@ -313,6 +369,7 @@ export function CardEditor({
                 </option>
               ))}
             </select>
+            )}
             {sceneMissing && linkedSceneId && (
               <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
                 The scene this card pointed to was removed from the script. Pick another, or
@@ -330,6 +387,43 @@ export function CardEditor({
               <p className="mt-1 text-xs text-neutral-500">
                 {sceneHeadingFromLabel(availableScenes.find((s) => s.id === linkedSceneId)?.label)}
               </p>
+            )}
+            {canStartScene && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {!linkedExists && (
+                  <button
+                    type="button"
+                    onClick={startScene}
+                    disabled={isPending}
+                    className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50 disabled:opacity-60 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                  >
+                    Start this scene in the script
+                  </button>
+                )}
+                {linkedExists && (
+                  <>
+                    <Link
+                      href={`/projects/${projectId}/write?scene=${linkedSceneId}`}
+                      className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                    >
+                      Open in the script
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={updateFromScene}
+                      disabled={isPending || linkedSceneId !== card.linkedSceneId}
+                      title={
+                        linkedSceneId !== card.linkedSceneId
+                          ? "Save the card first to read from the newly chosen scene"
+                          : "Fill the location and characters from the script"
+                      }
+                      className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50 disabled:opacity-60 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                    >
+                      Update from scene
+                    </button>
+                  </>
+                )}
+              </div>
             )}
           </div>
         )}
@@ -378,7 +472,7 @@ export function CardEditor({
             disabled={isPending}
             className="rounded-md bg-neutral-900 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-60 dark:bg-white dark:text-neutral-900"
           >
-            {isPending ? "Saving…" : "Save"}
+            {saving && isPending ? "Saving…" : "Save"}
           </button>
         </div>
       </div>

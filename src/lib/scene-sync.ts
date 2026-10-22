@@ -1,4 +1,6 @@
 import { groupScenes, type ScreenplayElement } from "@/lib/draft-content";
+import { normalizeCueName } from "@/lib/cast";
+import { parseSceneHeading } from "@/lib/screenplay-analysis";
 
 // An outline card is linked to a script scene by the id of the scene's
 // heading element. These helpers keep the two orders in step; all are pure.
@@ -98,4 +100,51 @@ export function sortCardsByScriptOrder<T extends { id: string; linkedSceneId: st
     result[slot] = sorted[k];
   });
   return result;
+}
+
+// Adds a new scene (heading plus an empty action line) for a card, in the place
+// the Plan board puts it: straight after the script scene of the nearest card
+// before it, otherwise straight before the nearest one after it, otherwise at
+// the end. `linkedInStoryOrder` is every card's linked scene id (null when it
+// has none), in story order; `index` is the card being started.
+export function insertSceneForCard(
+  elements: ScreenplayElement[],
+  linkedInStoryOrder: (string | null)[],
+  index: number,
+  scene: { heading: ScreenplayElement; action: ScreenplayElement }
+): ScreenplayElement[] {
+  const present = new Set(sceneIdsInOrder(elements));
+  const headingAt = (id: string) => elements.findIndex((el) => el.id === id);
+  const newScene = [scene.heading, scene.action];
+
+  for (let i = index - 1; i >= 0; i--) {
+    const id = linkedInStoryOrder[i];
+    if (!id || !present.has(id)) continue;
+    let end = headingAt(id) + 1;
+    while (end < elements.length && elements[end].type !== "scene_heading") end++;
+    return [...elements.slice(0, end), ...newScene, ...elements.slice(end)];
+  }
+  for (let i = index + 1; i < linkedInStoryOrder.length; i++) {
+    const id = linkedInStoryOrder[i];
+    if (!id || !present.has(id)) continue;
+    const at = headingAt(id);
+    return [...elements.slice(0, at), ...newScene, ...elements.slice(at)];
+  }
+  return [...elements, ...newScene];
+}
+
+// What the script says about one scene: where it's set and who speaks in it.
+export function sceneFacts(
+  elements: ScreenplayElement[],
+  sceneId: string
+): { location: string; speakers: string[] } | null {
+  const scene = groupScenes(elements).find((s) => s.heading?.id === sceneId);
+  if (!scene?.heading) return null;
+  const speakers: string[] = [];
+  for (const el of scene.body) {
+    if (el.type !== "character") continue;
+    const name = normalizeCueName(el.text);
+    if (name && !speakers.includes(name)) speakers.push(name);
+  }
+  return { location: parseSceneHeading(scene.heading.text).location, speakers };
 }

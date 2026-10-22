@@ -32,3 +32,13 @@ export function cardHeading(opts: {
 }): string | null {
   return sceneHeadingFromLabel(opts.sceneLabel) ?? (opts.location?.trim().toUpperCase() || null);
 }
+
+// The scene heading a new script scene starts with when it's made from a card.
+// The writer's location becomes the heading; INT. and DAY are the usual guess
+// and one keystroke to change. With no location it's left for them to fill in.
+export function headingForCard(location: string | null | undefined): string {
+  const loc = location?.trim().toUpperCase();
+  if (!loc) return "INT. ";
+  if (/^(INT\.\/EXT\.|INT\/EXT\.|I\/E\.|INT\.|EXT\.|EST\.)\s/.test(loc)) return loc;
+  return `INT. ${loc} - DAY`;
+}

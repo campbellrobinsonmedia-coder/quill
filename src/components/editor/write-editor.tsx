@@ -736,6 +736,7 @@ export function WriteEditor({
 
       {showScenes && !focusMode && content.type === "screenplay" && (
         <SceneNavigator
+          projectId={projectId}
           content={content}
           sceneNumbers={computeSceneNumbers(content.elements, sceneNumbersLocked)}
           cards={outlineCards}

@@ -3,14 +3,24 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
-import type { DraftContent, ScreenplayContent } from "@/lib/draft-content";
+import {
+  countWords,
+  createEmptyContent,
+  makeId,
+  type DraftContent,
+  type ScreenplayContent,
+} from "@/lib/draft-content";
+import { headingForCard } from "@/lib/card-face";
+import { nameKey } from "@/lib/cast";
 import { normalizeOutlineOrder } from "@/lib/outline-order";
 import { buildLayout, flattenLayout } from "@/lib/plan-layout";
 import { parseSceneHeading } from "@/lib/screenplay-analysis";
 import {
   findUnlinkedScenes,
+  insertSceneForCard,
   isScriptInOrder,
   reorderLinkedScenes,
+  sceneFacts,
   sceneIdsInOrder,
   sortCardsByScriptOrder,
 } from "@/lib/scene-sync";
@@ -150,4 +160,100 @@ export async function reorderOutlineToScript(projectId: string) {
 
   revalidateProject(projectId);
   return { changed: changes.length > 0 };
+}
+
+// Starts the script scene for a card: a heading (from the card's location) and
+// an empty action line, placed where the Plan board has the card, and linked to
+// it. Returns the scene's id so the caller can open the script there.
+export async function startSceneFromCard(cardId: string) {
+  const userId = await requireUserId();
+  const card = await prisma.outlineCard.findFirst({
+    where: { id: cardId, project: { userId } },
+    select: { id: true, projectId: true, location: true, linkedSceneId: true, project: { select: { writingMode: true } } },
+  });
+  if (!card) throw new Error("Not found");
+  if (card.project.writingMode !== "SCREENPLAY") {
+    throw new Error("Scenes can only be started in a screenplay");
+  }
+
+  const draft =
+    (await prisma.draft.findUnique({ where: { projectId: card.projectId } })) ??
+    (await prisma.draft.create({
+      data: {
+        projectId: card.projectId,
+        content: createEmptyContent("SCREENPLAY") as unknown as Prisma.InputJsonValue,
+      },
+    }));
+  const content = draft.content as unknown as DraftContent;
+  if (content.type !== "screenplay") throw new Error("Scenes can only be started in a screenplay");
+
+  if (card.linkedSceneId && sceneIdsInOrder(content.elements).includes(card.linkedSceneId)) {
+    return { sceneId: card.linkedSceneId, created: false };
+  }
+
+  const cards = await prisma.outlineCard.findMany({
+    where: { projectId: card.projectId },
+    orderBy: { order: "asc" },
+    select: { id: true, linkedSceneId: true },
+  });
+  const heading = { id: makeId(), type: "scene_heading" as const, text: headingForCard(card.location) };
+  const action = { id: makeId(), type: "action" as const, text: "" };
+  const next: ScreenplayContent = {
+    type: "screenplay",
+    elements: insertSceneForCard(
+      content.elements,
+      cards.map((c) => c.linkedSceneId),
+      cards.findIndex((c) => c.id === card.id),
+      { heading, action }
+    ),
+  };
+
+  // Only write if nobody saved the script since we read it.
+  const saved = await prisma.draft.updateMany({
+    where: { id: draft.id, revision: draft.revision },
+    data: {
+      content: next as unknown as Prisma.InputJsonValue,
+      wordCount: countWords(next),
+      revision: { increment: 1 },
+    },
+  });
+  if (saved.count === 0) throw new Error("The script changed while this was happening — try again");
+
+  await prisma.outlineCard.update({ where: { id: card.id }, data: { linkedSceneId: heading.id } });
+  revalidateProject(card.projectId);
+  return { sceneId: heading.id, created: true };
+}
+
+// What the script says about a card's scene, for "update from scene": the
+// location and which saved characters speak in it. Nothing is changed here; the
+// card panel shows it and the writer saves it if they want it.
+export async function sceneFactsForCard(cardId: string) {
+  const userId = await requireUserId();
+  const card = await prisma.outlineCard.findFirst({
+    where: { id: cardId, project: { userId } },
+    select: {
+      projectId: true,
+      linkedSceneId: true,
+      project: { select: { season: { select: { seriesId: true } } } },
+    },
+  });
+  if (!card?.linkedSceneId) return null;
+
+  const draft = await prisma.draft.findUnique({ where: { projectId: card.projectId } });
+  const content = draft?.content as unknown as DraftContent | undefined;
+  if (content?.type !== "screenplay") return null;
+  const facts = sceneFacts(content.elements, card.linkedSceneId);
+  if (!facts) return null;
+
+  const seriesId = card.project.season?.seriesId;
+  const characters = await prisma.character.findMany({
+    where: { OR: seriesId ? [{ projectId: card.projectId }, { seriesId }] : [{ projectId: card.projectId }] },
+    select: { id: true, name: true },
+  });
+  const byKey = new Map(characters.map((c) => [nameKey(c.name), c.id]));
+  return {
+    location: facts.location,
+    characterIds: facts.speakers.flatMap((s) => byKey.get(s) ?? []),
+    unmatched: facts.speakers.filter((s) => !byKey.has(s)),
+  };
 }

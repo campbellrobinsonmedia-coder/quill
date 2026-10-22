@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   findOrphanedCards,
   findUnlinkedScenes,
+  insertSceneForCard,
   isScriptInOrder,
   moveScene,
   reorderLinkedScenes,
+  sceneFacts,
   sceneIdsInOrder,
   sortCardsByScriptOrder,
 } from "@/lib/scene-sync";
@@ -95,5 +97,56 @@ describe("sortCardsByScriptOrder", () => {
     ];
     const out = sortCardsByScriptOrder(cards, ["s1", "s2", "s3", "s4"]);
     expect(out.map((c) => c.id)).toEqual(["cB", "free", "cA"]);
+  });
+});
+
+describe("insertSceneForCard", () => {
+  const scene = { heading: h("new"), action: a("new-a") };
+
+  it("goes after the previous card's scene, including its body", () => {
+    expect(ids(insertSceneForCard(script, ["s1", null, "s3"], 1, scene))).toEqual([
+      "intro", "s1", "s1-a", "new", "new-a", "s2", "s2-a", "s2-b", "s3", "s3-a", "s4",
+    ]);
+  });
+
+  it("skips earlier cards whose scene isn't in the script", () => {
+    expect(ids(insertSceneForCard(script, ["s2", "gone", null], 2, scene))).toEqual([
+      "intro", "s1", "s1-a", "s2", "s2-a", "s2-b", "new", "new-a", "s3", "s3-a", "s4",
+    ]);
+  });
+
+  it("goes before the next card's scene when nothing precedes it", () => {
+    expect(ids(insertSceneForCard(script, [null, "s2"], 0, scene))).toEqual([
+      "intro", "s1", "s1-a", "new", "new-a", "s2", "s2-a", "s2-b", "s3", "s3-a", "s4",
+    ]);
+  });
+
+  it("goes at the end when no card is linked", () => {
+    expect(ids(insertSceneForCard(script, [null], 0, scene)).slice(-3)).toEqual(["s4", "new", "new-a"]);
+  });
+
+  it("goes after the last scene even when it has no body", () => {
+    expect(ids(insertSceneForCard(script, ["s4", null], 1, scene)).slice(-3)).toEqual(["s4", "new", "new-a"]);
+  });
+});
+
+describe("sceneFacts", () => {
+  const els: ScreenplayElement[] = [
+    { id: "h", type: "scene_heading", text: "INT. LAMP ROOM - NIGHT" },
+    { id: "c1", type: "character", text: "MARA" },
+    { id: "d1", type: "dialogue", text: "Hello." },
+    { id: "c2", type: "character", text: "ELI (V.O.)" },
+    { id: "c3", type: "character", text: "MARA (CONT'D)" },
+    { id: "h2", type: "scene_heading", text: "EXT. DOCK - DAY" },
+    { id: "c4", type: "character", text: "NILS" },
+  ];
+
+  it("reads the location and the speakers of just that scene", () => {
+    expect(sceneFacts(els, "h")).toEqual({ location: "LAMP ROOM", speakers: ["MARA", "ELI"] });
+    expect(sceneFacts(els, "h2")).toEqual({ location: "DOCK", speakers: ["NILS"] });
+  });
+
+  it("returns null for a scene that isn't there", () => {
+    expect(sceneFacts(els, "nope")).toBeNull();
   });
 });
