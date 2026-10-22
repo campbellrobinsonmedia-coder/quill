@@ -14,6 +14,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { OutlineCard, type OutlineCardData } from "@/components/outline-card";
+import type { CardStat } from "@/lib/plan-progress";
 
 export type WallSize = "s" | "m" | "l";
 export const WALL_SIZES: { id: WallSize; label: string; min: number }[] = [
@@ -32,6 +33,7 @@ export function WallView({
   numbers,
   sceneLabelOf,
   isOrphaned,
+  statOf,
   matches,
   openCardId,
   size,
@@ -46,6 +48,7 @@ export function WallView({
   numbers: Map<string, number>;
   sceneLabelOf: (card: OutlineCardData) => string | undefined;
   isOrphaned: (cardId: string) => boolean;
+  statOf: (cardId: string) => CardStat | undefined;
   matches: (card: OutlineCardData) => boolean;
   openCardId: string | null;
   size: WallSize;
@@ -98,6 +101,7 @@ export function WallView({
                 active={openCardId === id}
                 dimmed={!matches(card)}
                 beatTitle={beatTitleOf(id)}
+                stat={statOf(id)}
                 onOpen={() => onOpen(id)}
               />
             );

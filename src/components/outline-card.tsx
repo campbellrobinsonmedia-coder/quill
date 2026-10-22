@@ -5,12 +5,14 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { swatchFor } from "@/lib/outline-colors";
 import { cardHeading, initials, splitCharacters } from "@/lib/card-face";
+import { STATUS_LABELS, type CardStat } from "@/lib/plan-progress";
 
 export type OutlineCardData = {
   id: string;
   title: string;
   summary: string | null;
   turn: string | null;
+  status: string;
   colorTag: string | null;
   act: string | null;
   location: string | null;
@@ -33,6 +35,7 @@ export function OutlineCard({
   active = false,
   dimmed = false,
   beatTitle,
+  stat,
   onOpen,
 }: {
   card: OutlineCardData;
@@ -47,6 +50,8 @@ export function OutlineCard({
   dimmed?: boolean;
   /** Shown on the face when cards from different beats sit together (the Wall). */
   beatTitle?: string;
+  /** Progress read from the script: status and the linked scene's pages. */
+  stat?: CardStat;
   onOpen: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -61,6 +66,8 @@ export function OutlineCard({
   const heading = cardHeading({ sceneLabel: sceneMissing ? null : sceneLabel, location: card.location });
   const { shown, extra } = splitCharacters(card.characters, 4);
   const blank = !card.summary && !card.turn;
+  const showStatus = stat && stat.status !== "idea";
+  const showPages = !!stat?.pages && !sceneMissing;
 
   return (
     <div
@@ -135,7 +142,7 @@ export function OutlineCard({
         </p>
       )}
 
-      {(shown.length > 0 || card.linkedSceneId || card.emotion) && (
+      {(shown.length > 0 || card.linkedSceneId || card.emotion || showStatus || showPages) && (
         <div className="flex flex-wrap items-center gap-1 pt-0.5">
           {shown.map((c) => (
             <span
@@ -149,6 +156,22 @@ export function OutlineCard({
           {extra > 0 && <span className="text-[10px] text-neutral-500">+{extra}</span>}
           {card.emotion && (
             <span className="text-[11px] text-neutral-500 dark:text-neutral-400">{card.emotion}</span>
+          )}
+          {stat && showStatus && (
+            <span
+              className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                stat.status === "written"
+                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                  : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+              }`}
+            >
+              {STATUS_LABELS[stat.status]}
+            </span>
+          )}
+          {showPages && (
+            <span className="text-[11px] tabular-nums text-neutral-500 dark:text-neutral-400">
+              {stat?.pages} pp
+            </span>
           )}
           {card.linkedSceneId && !sceneMissing && (
             <Link

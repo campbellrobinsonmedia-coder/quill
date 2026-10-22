@@ -1,7 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { getProjectOrNotFound } from "@/lib/get-project";
 import { PlanBoard } from "@/components/plan-board";
-import { listScenes, type DraftContent } from "@/lib/draft-content";
+import {
+  estimatePageCount,
+  estimateScenePages,
+  listScenes,
+  type DraftContent,
+} from "@/lib/draft-content";
+import { buildProgress, pageTargetFor } from "@/lib/plan-progress";
 import { findOrphanedCards, findUnlinkedScenes, isScriptInOrder } from "@/lib/scene-sync";
 import type { Metadata } from "next";
 
@@ -41,6 +47,7 @@ export default async function OutlinePage({
         title: true,
         summary: true,
         turn: true,
+        status: true,
         colorTag: true,
         act: true,
         location: true,
@@ -108,6 +115,15 @@ export default async function OutlinePage({
     };
   }
 
+  const isScreenplay = draftContent?.type === "screenplay";
+  const progress = buildProgress({
+    cards,
+    scenes: draftContent?.type === "screenplay" ? estimateScenePages(draftContent.elements) : null,
+    beats,
+    scriptPages: draftContent && isScreenplay ? estimatePageCount(draftContent) : null,
+    target: isScreenplay ? pageTargetFor(project.formatTemplate, project.pageTarget) : null,
+  });
+
   return (
     <PlanBoard
       key={id}
@@ -118,6 +134,7 @@ export default async function OutlinePage({
       availableScenes={availableScenes}
       seasonBeats={seasonBeats}
       sync={sync}
+      progress={progress}
     />
   );
 }

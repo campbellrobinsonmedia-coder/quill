@@ -59,6 +59,7 @@ async function seed(userId: string) {
       title: "Standalone",
       formatTemplate: "feature-screenplay",
       writingMode: "SCREENPLAY",
+      pageTarget: 95,
       draft: { create: { content: { type: "screenplay", elements: [] } } },
     },
   });
@@ -89,6 +90,7 @@ async function seed(userId: string) {
       beatId: projectBeat.id,
       title: "Mara arrives",
       turn: "Hope becomes doubt",
+      status: "written",
       order: 0,
       linkedSceneId: "scene-1",
       characters: { connect: [{ id: seriesCharacter.id }] },
@@ -225,6 +227,8 @@ describe.skipIf(!run)("backup restore (database)", () => {
     });
     expect(card.beatId).toBe(original.projectBeat.id);
     expect(card.turn).toBe("Hope becomes doubt");
+    expect(card.status).toBe("written");
+    expect((await prisma.project.findUniqueOrThrow({ where: { id: original.standalone.id } })).pageTarget).toBe(95);
     expect(card.linkedSceneId).toBe("scene-1");
     expect(card.characters).toHaveLength(1);
 

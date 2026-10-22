@@ -199,9 +199,13 @@ export async function updateProjectMeta(
     episodeTitle?: string | null;
     storyBy?: string | null;
     teleplayBy?: string | null;
+    pageTarget?: number | null;
   }
 ) {
   const userId = await requireUserId();
+  if (data.pageTarget != null && !(Number.isInteger(data.pageTarget) && data.pageTarget >= 1 && data.pageTarget <= 1000)) {
+    throw new Error("Page target must be a whole number from 1 to 1000");
+  }
   await prisma.project.updateMany({
     where: { id: projectId, userId },
     data,

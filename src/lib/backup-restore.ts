@@ -13,6 +13,7 @@ import {
   type Rec,
 } from "@/lib/backup";
 import { FORMAT_TEMPLATES } from "@/lib/format-templates";
+import { CARD_STATUSES } from "@/lib/plan-progress";
 import type { Prisma } from "@/generated/prisma/client";
 
 // Restoring only ever ADDS. In "missing" mode a record whose id is already in
@@ -349,6 +350,7 @@ async function execute(db: Db, userId: string, plan: Plan, mode: RestoreMode) {
           episodeTitle: readStr(rec.episodeTitle),
           storyBy: readStr(rec.storyBy),
           teleplayBy: readStr(rec.teleplayBy),
+          pageTarget: readNum(rec.pageTarget),
           createdAt: readDate(rec.createdAt),
         };
       }),
@@ -427,6 +429,7 @@ async function execute(db: Db, userId: string, plan: Plan, mode: RestoreMode) {
         title: str(rec.title, "Untitled"),
         summary: readStr(rec.summary),
         turn: readStr(rec.turn),
+        status: enumOf(rec.status, [...CARD_STATUSES], "idea"),
         colorTag: readStr(rec.colorTag),
         act: readStr(rec.act),
         location: readStr(rec.location),

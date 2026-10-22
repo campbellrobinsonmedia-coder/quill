@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { normalizeOutlineOrder } from "@/lib/outline-order";
+import { isCardStatus } from "@/lib/plan-progress";
 import type { Prisma } from "@/generated/prisma/client";
 
 async function assertOwnsProject(userId: string, projectId: string) {
@@ -55,6 +56,7 @@ export async function updateCard(
     title?: string;
     summary?: string;
     turn?: string | null;
+    status?: string;
     colorTag?: string | null;
     act?: string | null;
     location?: string | null;
@@ -77,6 +79,7 @@ export async function updateCard(
   if (!card || card.project.userId !== userId) throw new Error("Not found");
 
   const { characterIds, ...rest } = data;
+  if (rest.status !== undefined && !isCardStatus(rest.status)) throw new Error("Unknown status");
   if (rest.beatId) await assertBeatInProject(rest.beatId, card.project.id);
 
   if (characterIds) {

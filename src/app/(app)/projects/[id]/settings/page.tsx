@@ -1,5 +1,6 @@
 import { getProjectOrNotFound } from "@/lib/get-project";
 import { ProjectSettingsForm } from "@/components/project-settings-form";
+import { defaultPageTarget } from "@/lib/plan-progress";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -17,6 +18,8 @@ export default async function ProjectSettingsPage({
       <ProjectSettingsForm
         projectId={id}
         isEpisode={Boolean(project.seasonId)}
+        showPageTarget={project.writingMode === "SCREENPLAY"}
+        defaultPageTarget={defaultPageTarget(project.formatTemplate)}
         initial={{
           title: project.title,
           logline: project.logline,
@@ -26,6 +29,7 @@ export default async function ProjectSettingsPage({
           episodeTitle: project.episodeTitle,
           storyBy: project.storyBy,
           teleplayBy: project.teleplayBy,
+          pageTarget: project.pageTarget,
         }}
       />
     </div>

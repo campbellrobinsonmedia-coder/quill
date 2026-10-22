@@ -84,32 +84,46 @@ const LINES_PER_PAGE = 55;
 const ACTION_CHARS_PER_LINE = 60;
 const DIALOGUE_CHARS_PER_LINE = 35;
 
+function elementLines(el: ScreenplayElement): number {
+  const len = el.text.length;
+  switch (el.type) {
+    case "scene_heading":
+      return 2; // heading + blank line after
+    case "action":
+      return Math.max(1, Math.ceil(len / ACTION_CHARS_PER_LINE)) + 1;
+    case "character":
+    case "parenthetical":
+      return 1;
+    case "dialogue":
+      return Math.max(1, Math.ceil(len / DIALOGUE_CHARS_PER_LINE)) + 1;
+    case "transition":
+      return 2;
+    default:
+      return 0;
+  }
+}
+
 export function estimateScreenplayPageCount(content: ScreenplayContent): number {
   let lines = 0;
-  for (const el of content.elements) {
-    const len = el.text.length;
-    switch (el.type) {
-      case "scene_heading":
-        lines += 2; // heading + blank line after
-        break;
-      case "action":
-        lines += Math.max(1, Math.ceil(len / ACTION_CHARS_PER_LINE)) + 1;
-        break;
-      case "character":
-        lines += 1;
-        break;
-      case "parenthetical":
-        lines += 1;
-        break;
-      case "dialogue":
-        lines += Math.max(1, Math.ceil(len / DIALOGUE_CHARS_PER_LINE)) + 1;
-        break;
-      case "transition":
-        lines += 2;
-        break;
-    }
-  }
+  for (const el of content.elements) lines += elementLines(el);
   return Math.max(0, Math.round((lines / LINES_PER_PAGE) * 10) / 10);
+}
+
+export type ScenePages = { pages: number; hasContent: boolean };
+
+// Pages and "has anything been written" for each scene, keyed by the scene
+// heading's id, using the same estimate as the whole-script count.
+export function estimateScenePages(elements: ScreenplayElement[]): Map<string, ScenePages> {
+  const out = new Map<string, ScenePages>();
+  for (const scene of groupScenes(elements)) {
+    if (!scene.heading) continue;
+    const lines = [scene.heading, ...scene.body].reduce((n, el) => n + elementLines(el), 0);
+    out.set(scene.heading.id, {
+      pages: lines / LINES_PER_PAGE,
+      hasContent: scene.body.some((el) => el.text.trim().length > 0),
+    });
+  }
+  return out;
 }
 
 export function estimateProsePageCount(content: ProseContent): number {

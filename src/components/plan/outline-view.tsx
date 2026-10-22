@@ -6,6 +6,7 @@ import { useToast } from "@/components/toast";
 import type { OutlineCardData } from "@/components/outline-card";
 import { cardHeading } from "@/lib/card-face";
 import { swatchFor } from "@/lib/outline-colors";
+import { STATUS_LABELS, type CardStat } from "@/lib/plan-progress";
 
 type Group = { key: string; label: string; summary: string | null; ids: string[] };
 
@@ -52,6 +53,7 @@ function OutlineRow({
   number,
   sceneLabel,
   sceneMissing,
+  stat,
   dimmed,
   active,
   onOpen,
@@ -60,6 +62,7 @@ function OutlineRow({
   number: number;
   sceneLabel?: string;
   sceneMissing: boolean;
+  stat?: CardStat;
   dimmed: boolean;
   active: boolean;
   onOpen: () => void;
@@ -105,6 +108,7 @@ function OutlineRow({
           <p className="px-1 text-[11px] font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
             {heading}
             {card.storyThread && <span className="ml-2 rounded bg-neutral-100 px-1 text-[10px] dark:bg-neutral-800">{card.storyThread}</span>}
+            {stat && stat.status !== "idea" && <span className="ml-2 normal-case">· {STATUS_LABELS[stat.status]}{stat.pages != null && !sceneMissing ? `, ${stat.pages} pp` : ""}</span>}
           </p>
         )}
         <GrowTextarea
@@ -161,6 +165,7 @@ export function OutlineView({
   numbers,
   sceneLabelOf,
   isOrphaned,
+  statOf,
   matches,
   openCardId,
   onOpen,
@@ -171,6 +176,7 @@ export function OutlineView({
   numbers: Map<string, number>;
   sceneLabelOf: (card: OutlineCardData) => string | undefined;
   isOrphaned: (cardId: string) => boolean;
+  statOf: (cardId: string) => CardStat | undefined;
   matches: (card: OutlineCardData) => boolean;
   openCardId: string | null;
   onOpen: (id: string) => void;
@@ -203,6 +209,7 @@ export function OutlineView({
                     number={numbers.get(id) ?? 0}
                     sceneLabel={sceneLabelOf(card)}
                     sceneMissing={isOrphaned(id)}
+                    stat={statOf(id)}
                     dimmed={!matches(card)}
                     active={openCardId === id}
                     onOpen={() => onOpen(id)}

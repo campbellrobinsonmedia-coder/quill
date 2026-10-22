@@ -270,6 +270,17 @@ export const CHANGELOG: ChangelogRelease[] = [
       "Highlight a character, storyline or location in any view and every other card fades back",
     ],
   },
+  {
+    version: "v26",
+    title: "Progress from your script",
+    items: [
+      "A progress strip on the Plan page: scenes written out of scenes planned, estimated script pages against a page target, and a bar for each beat showing how much of it is written and how many pages it holds",
+      "Each scene card has a status — Idea, Started or Written. A card whose linked scene already has text in the script counts as started on its own; you mark it Written when it's done",
+      "Cards linked to a scene show that scene's page count, so you can see which scenes are running long",
+      "Set a page target per script in the project settings; blank uses the usual length for the format (110 for a feature, 55 for an hour pilot, 30 for a half-hour)",
+      "Backup and restore include card status and the page target",
+    ],
+  },
 ];
 
 // Not built yet — discussed and agreed as direction, not a fixed commitment.

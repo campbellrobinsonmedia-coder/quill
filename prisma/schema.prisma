@@ -210,6 +210,8 @@ model Project {
   episodeTitle     String?
   storyBy          String?
   teleplayBy       String?
+  // Page goal for the progress strip; null means the format's usual length.
+  pageTarget       Int?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
@@ -290,6 +292,8 @@ model OutlineCard {
   summary       String?
   // What changes in the scene (hope to doubt, secret kept to secret exposed).
   turn          String?
+  // "idea" | "started" | "written"; a linked scene with text counts as at least started.
+  status        String   @default("idea")
   colorTag      String?
   act           String?
   location      String?

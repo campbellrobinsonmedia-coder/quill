@@ -8,6 +8,8 @@ export function ProjectSettingsForm({
   projectId,
   initial,
   isEpisode = false,
+  defaultPageTarget = null,
+  showPageTarget = false,
 }: {
   projectId: string;
   isEpisode?: boolean;
@@ -20,7 +22,11 @@ export function ProjectSettingsForm({
     episodeTitle?: string | null;
     storyBy?: string | null;
     teleplayBy?: string | null;
+    pageTarget?: number | null;
   };
+  /** Screenplays only: the format's usual length, shown as the placeholder. */
+  defaultPageTarget?: number | null;
+  showPageTarget?: boolean;
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(initial.title);
@@ -31,11 +37,19 @@ export function ProjectSettingsForm({
   const [episodeTitle, setEpisodeTitle] = useState(initial.episodeTitle ?? "");
   const [storyBy, setStoryBy] = useState(initial.storyBy ?? "");
   const [teleplayBy, setTeleplayBy] = useState(initial.teleplayBy ?? "");
+  const [pageTarget, setPageTarget] = useState(initial.pageTarget ? String(initial.pageTarget) : "");
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const target = pageTarget.trim() === "" ? null : Number(pageTarget);
+    if (showPageTarget && target !== null && !(Number.isInteger(target) && target >= 1 && target <= 1000)) {
+      setError("Page target should be a whole number from 1 to 1000, or blank for the usual length.");
+      return;
+    }
+    setError(null);
     startTransition(async () => {
       await updateProjectMeta(projectId, {
         title: title.trim() || initial.title,
@@ -43,6 +57,7 @@ export function ProjectSettingsForm({
         titlePageAuthor: author || null,
         titlePageContact: contact || null,
         titlePageBasedOn: basedOn || null,
+        ...(showPageTarget ? { pageTarget: target } : {}),
         ...(isEpisode
           ? {
               episodeTitle: episodeTitle || null,
@@ -74,6 +89,34 @@ export function ProjectSettingsForm({
           className={inputClass + " resize-none"}
         />
       </div>
+
+      {showPageTarget && (
+        <div className="space-y-1">
+          <label htmlFor="page-target" className="text-sm font-medium">
+            Page target
+          </label>
+          <input
+            id="page-target"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={1000}
+            value={pageTarget}
+            onChange={(e) => setPageTarget(e.target.value)}
+            placeholder={defaultPageTarget ? String(defaultPageTarget) : "e.g. 100"}
+            className={inputClass}
+          />
+          <p className="text-xs text-neutral-500">
+            The Plan page tracks your script&apos;s pages against this.
+            {defaultPageTarget ? ` Leave blank for the usual ${defaultPageTarget} for this format.` : ""}
+          </p>
+          {error && (
+            <p role="alert" className="text-xs text-red-600">
+              {error}
+            </p>
+          )}
+        </div>
+      )}
 
       {isEpisode && (
         <div className="border-t border-neutral-200 pt-4 dark:border-neutral-800">

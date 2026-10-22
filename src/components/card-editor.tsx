@@ -6,6 +6,7 @@ import { useToast } from "@/components/toast";
 import { OUTLINE_COLORS } from "@/lib/outline-colors";
 import { sceneHeadingFromLabel } from "@/lib/card-face";
 import type { OutlineCardData } from "@/components/outline-card";
+import { CARD_STATUSES, STATUS_LABELS, isCardStatus, type CardStat } from "@/lib/plan-progress";
 
 const FIELD =
   "w-full rounded-md border border-neutral-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900";
@@ -19,6 +20,7 @@ export function CardEditor({
   availableScenes,
   beatOptions,
   sceneMissing,
+  stat,
   onClose,
 }: {
   card: OutlineCardData;
@@ -27,6 +29,8 @@ export function CardEditor({
   availableScenes: { id: string; label: string }[];
   beatOptions: { id: string; title: string }[];
   sceneMissing: boolean;
+  /** Progress read from the script. */
+  stat?: CardStat;
   onClose: () => void;
 }) {
   const toast = useToast();
@@ -42,6 +46,7 @@ export function CardEditor({
   const [emotion, setEmotion] = useState(card.emotion ?? "");
   const [linkedSceneId, setLinkedSceneId] = useState(card.linkedSceneId ?? "");
   const [beatId, setBeatId] = useState(card.beatId ?? "");
+  const [status, setStatus] = useState(isCardStatus(card.status) ? card.status : "idea");
   const [colorTag, setColorTag] = useState(card.colorTag ?? "neutral");
   const [characterIds, setCharacterIds] = useState(new Set(card.characters.map((c) => c.id)));
 
@@ -65,6 +70,7 @@ export function CardEditor({
           title: title.trim() || "Untitled",
           summary,
           turn: turn.trim() || null,
+          status,
           act: act || null,
           location: location || null,
           emotion: emotion || null,
@@ -162,6 +168,29 @@ export function CardEditor({
             placeholder="e.g. hope → doubt, or a secret kept → exposed"
             className={`${FIELD} resize-y`}
           />
+        </div>
+
+        <div>
+          <p className={LABEL}>Progress</p>
+          <div role="group" aria-label="Progress" className="inline-flex divide-x divide-neutral-300 rounded-md border border-neutral-300 dark:divide-neutral-700 dark:border-neutral-700">
+            {CARD_STATUSES.map((s) => (
+              <button
+                key={s}
+                type="button"
+                aria-pressed={status === s}
+                onClick={() => setStatus(s)}
+                className="px-3 py-1.5 text-sm first:rounded-l-md last:rounded-r-md aria-pressed:bg-neutral-900 aria-pressed:text-white dark:aria-pressed:bg-white dark:aria-pressed:text-neutral-900"
+              >
+                {STATUS_LABELS[s]}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1 text-xs text-neutral-500">
+            {stat?.pages != null && !sceneMissing
+              ? `About ${stat.pages} page${stat.pages === 1 ? "" : "s"} in the script so far. `
+              : ""}
+            A scene with text in the script counts as started; mark it written when it&apos;s done.
+          </p>
         </div>
 
         {availableCharacters.length > 0 && (

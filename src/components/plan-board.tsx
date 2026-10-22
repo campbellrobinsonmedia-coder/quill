@@ -39,6 +39,8 @@ import { beatSpans } from "@/lib/plan-lanes";
 import { WallView, WALL_SIZES, type WallSize } from "@/components/plan/wall-view";
 import { LanesView, type LaneMode } from "@/components/plan/lanes-view";
 import { OutlineView } from "@/components/plan/outline-view";
+import { ProgressPanel } from "@/components/plan/progress-panel";
+import type { PlanProgress } from "@/lib/plan-progress";
 import { createProjectBeat, applyBeatTemplate, reorderBeats } from "@/app/actions/beats";
 import { createCard, saveOutlineLayout } from "@/app/actions/outline";
 import {
@@ -116,6 +118,7 @@ export function PlanBoard({
   availableScenes = [],
   seasonBeats = [],
   sync = null,
+  progress = null,
 }: {
   projectId: string;
   initialBeats: (PlanBeat & { order: number })[];
@@ -124,6 +127,7 @@ export function PlanBoard({
   availableScenes?: { id: string; label: string }[];
   seasonBeats?: OverviewBeat[];
   sync?: ScriptSync | null;
+  progress?: PlanProgress | null;
 }) {
   const toast = useToast();
   const stacked = useMediaQuery("(max-width: 639px)");
@@ -300,6 +304,7 @@ export function PlanBoard({
   const orderedCards = orderedIds.flatMap((id) => cardsById.get(id) ?? []);
   const sceneLabelOf = (card: OutlineCardData) =>
     card.linkedSceneId ? sync?.sceneLabels[card.linkedSceneId] : undefined;
+  const statOf = (id: string) => progress?.cardStats[id];
   const isOrphaned = (id: string) => sync?.orphanedCardIds.includes(id) ?? false;
   const beatTitleOf = (id: string) => {
     if (!hasBeats) return undefined;
@@ -338,6 +343,7 @@ export function PlanBoard({
         sceneMissing={isOrphaned(id)}
         active={openCardId === id}
         dimmed={!matches(card)}
+        stat={statOf(id)}
         onOpen={() => setOpenCardId(id)}
       />
     );
@@ -374,6 +380,8 @@ export function PlanBoard({
           ))}
         </Menu>
       </div>
+
+      {progress && <ProgressPanel progress={progress} />}
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <div role="group" aria-label="View" className={SEGMENTS}>
@@ -507,6 +515,7 @@ export function PlanBoard({
           availableScenes={availableScenes}
           beatOptions={beatOptions}
           sceneMissing={sync?.orphanedCardIds.includes(openCard.id) ?? false}
+          stat={statOf(openCard.id)}
           onClose={() => setOpenCardId(null)}
         />
       )}
@@ -520,6 +529,7 @@ export function PlanBoard({
           numbers={numbers}
           sceneLabelOf={sceneLabelOf}
           isOrphaned={isOrphaned}
+          statOf={statOf}
           matches={matches}
           openCardId={openCardId}
           size={wallSize}
@@ -548,6 +558,7 @@ export function PlanBoard({
           numbers={numbers}
           sceneLabelOf={sceneLabelOf}
           isOrphaned={isOrphaned}
+          statOf={statOf}
           matches={matches}
           openCardId={openCardId}
           onOpen={setOpenCardId}
