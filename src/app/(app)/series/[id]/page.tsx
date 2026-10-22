@@ -7,7 +7,17 @@ import { BeatBoard } from "@/components/beat-board";
 import { ReferenceList } from "@/components/reference-list";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Overview" };
+// A layout's title template doesn't apply to the page in its own segment,
+// so the series name is spelled out here.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const series = await getSeriesOrNotFound(id);
+  return { title: `Overview · ${series.title}` };
+}
 
 export default async function SeriesOverviewPage({
   params,

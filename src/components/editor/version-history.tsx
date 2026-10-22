@@ -60,7 +60,7 @@ export function VersionHistory({
   }
 
   return (
-    <div className="flex h-full w-80 shrink-0 flex-col border-l border-neutral-200 dark:border-neutral-800">
+    <div className="fixed inset-0 z-40 flex flex-col bg-white sm:static sm:z-auto sm:h-full sm:w-80 sm:shrink-0 sm:border-l sm:border-neutral-200 dark:bg-neutral-950 sm:dark:border-neutral-800">
       <div className="flex items-center justify-between border-b border-neutral-200 p-4 dark:border-neutral-800">
         <h2 className="text-sm font-medium">Version history</h2>
         <button onClick={onClose} className="text-sm text-neutral-500">

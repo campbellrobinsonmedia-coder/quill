@@ -5,7 +5,17 @@ import { BeatBoard } from "@/components/beat-board";
 import { listScenes, type DraftContent } from "@/lib/draft-content";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Outline" };
+// A layout's title template doesn't apply to the page in its own segment,
+// so the project name is spelled out here.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const project = await getProjectOrNotFound(id);
+  return { title: `Outline · ${project.title}` };
+}
 
 export default async function OutlinePage({
   params,
@@ -74,7 +84,7 @@ export default async function OutlinePage({
   const cardOptions = cards.map((c) => ({ id: c.id, title: c.title }));
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div className="flex flex-1 flex-col sm:overflow-hidden">
       <section className="space-y-3 border-b border-neutral-200 p-4 pb-6 sm:p-6 dark:border-neutral-800">
         <h3 className="text-sm font-medium text-neutral-500">Beats</h3>
         <BeatBoard

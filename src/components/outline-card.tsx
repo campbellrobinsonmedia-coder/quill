@@ -87,7 +87,7 @@ export function OutlineCard({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex w-64 flex-col gap-2 rounded-md border border-neutral-200 bg-white p-3 shadow-sm dark:border-neutral-800 dark:bg-neutral-900"
+      className="flex w-full flex-col gap-2 rounded-md sm:w-64 border border-neutral-200 bg-white p-3 shadow-sm dark:border-neutral-800 dark:bg-neutral-900"
     >
       <div className="flex items-start justify-between gap-2">
         <span className="mt-1.5 shrink-0 text-xs font-medium tabular-nums text-neutral-500 dark:text-neutral-400">
@@ -96,7 +96,7 @@ export function OutlineCard({
         <div
           {...attributes}
           {...listeners}
-          className="flex shrink-0 touch-none select-none items-center justify-center rounded p-1.5 cursor-grab active:cursor-grabbing hover:bg-neutral-100 dark:hover:bg-neutral-800"
+          className="flex shrink-0 touch-none select-none items-center justify-center rounded p-2.5 cursor-grab sm:p-1.5 active:cursor-grabbing hover:bg-neutral-100 dark:hover:bg-neutral-800"
           title="Drag to reorder"
         >
           <div

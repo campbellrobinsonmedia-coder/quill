@@ -358,6 +358,45 @@ export function WriteEditor({
     });
   }
 
+  const exportMenuItems = (
+    <>
+      <label className="block px-3 pb-1 pt-2 text-xs text-neutral-500">
+        PDF watermark (optional)
+        <input
+          value={watermark}
+          onChange={(e) => setWatermark(e.target.value)}
+          aria-label="Watermark for PDF export"
+          className="mt-1 block w-full rounded border border-neutral-300 bg-transparent px-2 py-1.5 text-sm outline-none dark:border-neutral-700"
+        />
+      </label>
+      <a
+        href={`/api/projects/${projectId}/export/pdf${watermark ? `?watermark=${encodeURIComponent(watermark)}` : ""}`}
+        className={MENU_ITEM}
+      >
+        PDF
+      </a>
+      <a
+        href={`/api/projects/${projectId}/export/fountain`}
+        className={MENU_ITEM}
+      >
+        Fountain
+      </a>
+      <a
+        href={`/api/projects/${projectId}/export/fdx`}
+        className={MENU_ITEM}
+      >
+        Final Draft (FDX)
+      </a>
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        className={`${MENU_ITEM} border-t border-neutral-100 dark:border-neutral-800`}
+      >
+        Import FDX…
+      </button>
+    </>
+  );
+
   return (
     <>
       {showIntro && (
@@ -376,6 +415,12 @@ export function WriteEditor({
                   Tab
                 </span>{" "}
                 cycles the current line&apos;s format.
+              </li>
+              <li>
+                <span className="font-medium text-neutral-900 dark:text-neutral-100">
+                  On a phone,
+                </span>{" "}
+                the bar above the keyboard changes the line format.
               </li>
               <li>
                 <span className="font-medium text-neutral-900 dark:text-neutral-100">
@@ -414,7 +459,7 @@ export function WriteEditor({
     >
       <div className="flex min-w-0 flex-1 flex-col">
         {!focusMode && (
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200 px-6 py-2 text-xs text-neutral-500 dark:border-neutral-800">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200 px-4 py-2 text-xs text-neutral-500 sm:px-6 dark:border-neutral-800">
             <div className="flex flex-wrap items-center gap-4">
               <span>{wordCount} words</span>
               <span>{pageCount} pages</span>
@@ -444,44 +489,50 @@ export function WriteEditor({
                 </span>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-1">
+            <div className="ml-auto flex items-center gap-1 sm:hidden">
+              <Menu label="Menu" buttonClassName={TOOLBAR_ITEM}>
+                {content.type === "screenplay" && (
+                  <>
+                    {exportMenuItems}
+                    <button
+                      type="button"
+                      onClick={() => setHideAction((v) => !v)}
+                      aria-pressed={hideAction}
+                      className={`${MENU_ITEM} border-t border-neutral-100 dark:border-neutral-800`}
+                    >
+                      {hideAction ? "Show action lines" : "Dialogue only"}
+                    </button>
+                    <ReadAloud content={content} className={MENU_ITEM} />
+                    <button
+                      type="button"
+                      onClick={handleLockDraft}
+                      disabled={isLocking}
+                      className={`${MENU_ITEM} disabled:opacity-60`}
+                    >
+                      {isLocking ? "Locking…" : "Lock revision"}
+                    </button>
+                  </>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowHistory((v) => !v)}
+                  className={MENU_ITEM}
+                >
+                  History
+                </button>
+              </Menu>
+              <button
+                onClick={() => setFocusMode(true)}
+                className="inline-flex h-11 items-center rounded-md border border-neutral-300 px-3 text-xs font-medium text-neutral-700 dark:border-neutral-700 dark:text-neutral-300"
+              >
+                Focus
+              </button>
+            </div>
+            <div className="hidden flex-wrap items-center gap-1 sm:flex">
               {content.type === "screenplay" && (
                 <>
                   <Menu label="Export" buttonClassName={TOOLBAR_ITEM}>
-                    <label className="block px-3 pb-1 pt-2 text-xs text-neutral-500">
-                      PDF watermark (optional)
-                      <input
-                        value={watermark}
-                        onChange={(e) => setWatermark(e.target.value)}
-                        aria-label="Watermark for PDF export"
-                        className="mt-1 block w-full rounded border border-neutral-300 bg-transparent px-2 py-1.5 text-sm outline-none dark:border-neutral-700"
-                      />
-                    </label>
-                    <a
-                      href={`/api/projects/${projectId}/export/pdf${watermark ? `?watermark=${encodeURIComponent(watermark)}` : ""}`}
-                      className={MENU_ITEM}
-                    >
-                      PDF
-                    </a>
-                    <a
-                      href={`/api/projects/${projectId}/export/fountain`}
-                      className={MENU_ITEM}
-                    >
-                      Fountain
-                    </a>
-                    <a
-                      href={`/api/projects/${projectId}/export/fdx`}
-                      className={MENU_ITEM}
-                    >
-                      Final Draft (FDX)
-                    </a>
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className={`${MENU_ITEM} border-t border-neutral-100 dark:border-neutral-800`}
-                    >
-                      Import FDX…
-                    </button>
+                    {exportMenuItems}
                   </Menu>
                   <input
                     ref={fileInputRef}

@@ -13,7 +13,9 @@ import {
   SortableContext,
   arrayMove,
   horizontalListSortingStrategy,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { useMediaQuery } from "@/lib/use-media-query";
 import { OutlineCard, type OutlineCardData } from "@/components/outline-card";
 import { createCard, reorderCards } from "@/app/actions/outline";
 
@@ -36,6 +38,7 @@ export function OutlineBoard({
   }
   const [newTitle, setNewTitle] = useState("");
   const [isPending, startTransition] = useTransition();
+  const stacked = useMediaQuery("(max-width: 639px)");
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
@@ -64,7 +67,7 @@ export function OutlineBoard({
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 overflow-hidden p-4 sm:p-6">
+    <div className="flex flex-1 flex-col gap-4 p-4 sm:overflow-hidden sm:p-6">
       <form onSubmit={handleAdd} className="flex shrink-0 gap-2">
         <input
           value={newTitle}
@@ -88,7 +91,7 @@ export function OutlineBoard({
       ) : (
         <>
           <p className="shrink-0 text-xs text-neutral-500 dark:text-neutral-400">
-            {cards.length} card{cards.length === 1 ? "" : "s"} · left to right is story order · drag to reorder
+            {cards.length} card{cards.length === 1 ? "" : "s"} · {stacked ? "top to bottom" : "left to right"} is story order · drag to reorder
           </p>
           <DndContext
             id={`outline-board-${projectId}`}
@@ -96,10 +99,10 @@ export function OutlineBoard({
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            <SortableContext items={cards.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
-              <div className="flex flex-1 items-start gap-0 overflow-x-auto pb-4">
+            <SortableContext items={cards.map((c) => c.id)} strategy={stacked ? verticalListSortingStrategy : horizontalListSortingStrategy}>
+              <div className="flex flex-1 flex-col gap-2 pb-4 sm:flex-row sm:items-start sm:gap-0 sm:overflow-x-auto">
                 {cards.map((card, index) => (
-                  <div key={card.id} className="flex shrink-0 items-center">
+                  <div key={card.id} className="flex w-full shrink-0 items-center sm:w-auto">
                     <OutlineCard
                       card={card}
                       number={index + 1}
@@ -108,7 +111,7 @@ export function OutlineBoard({
                       availableScenes={availableScenes}
                     />
                     {index < cards.length - 1 && (
-                      <span className="mx-2 shrink-0 text-neutral-300 dark:text-neutral-700">
+                      <span className="mx-2 hidden shrink-0 text-neutral-300 sm:inline dark:text-neutral-700">
                         →
                       </span>
                     )}

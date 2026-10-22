@@ -14,6 +14,7 @@ import {
   type ScreenplayElement,
   type ScreenplayElementType,
 } from "@/lib/draft-content";
+import { useMediaQuery } from "@/lib/use-media-query";
 
 export type CommentData = {
   id: string;
@@ -38,6 +39,47 @@ const TYPE_STYLES: Record<ScreenplayElementType, string> = {
   dialogue: "ml-[1in] max-w-[3.5in]",
   transition: "ml-auto text-right uppercase",
 };
+
+// On phones the page reflows instead of scaling: indents become percentages
+// so text stays at a readable size. Page counts and PDF export still come
+// from the same data, so they're unaffected.
+const COMPACT_TYPE_STYLES: Record<ScreenplayElementType, string> = {
+  scene_heading: "uppercase",
+  action: "",
+  character: "ml-[28%] max-w-[72%] uppercase",
+  parenthetical: "ml-[18%] max-w-[72%]",
+  dialogue: "ml-[8%] max-w-[92%]",
+  transition: "ml-auto text-right uppercase",
+};
+
+const FORMAT_BUTTONS: { type: ScreenplayElementType; label: string }[] = [
+  { type: "scene_heading", label: "Scene" },
+  { type: "action", label: "Action" },
+  { type: "character", label: "Char" },
+  { type: "parenthetical", label: "Paren" },
+  { type: "dialogue", label: "Dial" },
+  { type: "transition", label: "Trans" },
+];
+
+// The on-screen keyboard shrinks the visual viewport but not the layout
+// viewport, so anything fixed to the bottom needs lifting by the difference.
+function useKeyboardOffset(enabled: boolean): number {
+  const [offset, setOffset] = useState(0);
+  useEffect(() => {
+    if (!enabled) return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () =>
+      setOffset(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, [enabled]);
+  return enabled ? offset : 0;
+}
 
 // Industry-standard US Letter page at 96dpi. Margins/indents above are
 // fixed physical measurements, so we scale the page as a whole rather than
@@ -101,7 +143,9 @@ export function ScreenplayEditor({
   const pageRef = useRef<HTMLDivElement>(null);
   const [autoScale, setAutoScale] = useState(1);
   const [manualZoom, setManualZoom] = useState<number | null>(null);
-  const scale = manualZoom ?? autoScale;
+  const compact = useMediaQuery("(max-width: 639px)");
+  const keyboardOffset = useKeyboardOffset(compact);
+  const scale = compact ? 1 : (manualZoom ?? autoScale);
   const [pageHeight, setPageHeight] = useState<number>();
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [openCommentFor, setOpenCommentFor] = useState<string | null>(null);
@@ -241,6 +285,65 @@ export function ScreenplayEditor({
     setElements(next);
   }
 
+  function handleEnter(index: number, textarea: HTMLTextAreaElement) {
+    const el = elements[index];
+    if (!el.text.trim()) {
+      const converted = enterOnEmptyType(el.type);
+      if (converted) {
+        setType(index, converted);
+        return;
+      }
+    }
+    const pos = textarea.selectionStart;
+    const before = el.text.slice(0, pos);
+    const after = el.text.slice(pos);
+    const newId = makeId();
+    const newType = nextEnterType(el.type);
+
+    const next = elements.slice();
+    next[index] = { ...el, text: before };
+    next.splice(index + 1, 0, {
+      id: newId,
+      type: newType,
+      text: UPPERCASE_TYPES.includes(newType) ? after.toUpperCase() : after,
+    });
+    pendingFocus.current = { id: newId, pos: 0 };
+    setElements(next);
+  }
+
+  // Some Android keyboards report Enter as key "Unidentified", so keydown
+  // never sees it; the beforeinput line-break event is the reliable signal.
+  const handleEnterRef = useRef(handleEnter);
+  const lastEnterKeydownAt = useRef(0);
+  useEffect(() => {
+    handleEnterRef.current = handleEnter;
+  });
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    function onBeforeInput(e: InputEvent) {
+      if (e.inputType !== "insertLineBreak" && e.inputType !== "insertParagraph") return;
+      if (Date.now() - lastEnterKeydownAt.current < 100) return;
+      const target = e.target;
+      if (!(target instanceof HTMLTextAreaElement)) return;
+      for (const [id, node] of refs.current) {
+        if (node !== target) continue;
+        const index = contentElementsRef.current.findIndex((el) => el.id === id);
+        if (index >= 0) {
+          e.preventDefault();
+          handleEnterRef.current(index, target);
+        }
+        return;
+      }
+    }
+    container.addEventListener("beforeinput", onBeforeInput);
+    return () => container.removeEventListener("beforeinput", onBeforeInput);
+  }, []);
+  const contentElementsRef = useRef(elements);
+  useEffect(() => {
+    contentElementsRef.current = elements;
+  });
+
   function handleKeyDown(index: number, e: React.KeyboardEvent<HTMLTextAreaElement>) {
     const el = elements[index];
     const textarea = e.currentTarget;
@@ -251,30 +354,11 @@ export function ScreenplayEditor({
       return;
     }
 
+    if (e.key === "Enter") lastEnterKeydownAt.current = Date.now();
+
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      if (!el.text.trim()) {
-        const converted = enterOnEmptyType(el.type);
-        if (converted) {
-          setType(index, converted);
-          return;
-        }
-      }
-      const pos = textarea.selectionStart;
-      const before = el.text.slice(0, pos);
-      const after = el.text.slice(pos);
-      const newId = makeId();
-      const newType = nextEnterType(el.type);
-
-      const next = elements.slice();
-      next[index] = { ...el, text: before };
-      next.splice(index + 1, 0, {
-        id: newId,
-        type: newType,
-        text: UPPERCASE_TYPES.includes(newType) ? after.toUpperCase() : after,
-      });
-      pendingFocus.current = { id: newId, pos: 0 };
-      setElements(next);
+      handleEnter(index, textarea);
       return;
     }
 
@@ -320,7 +404,7 @@ export function ScreenplayEditor({
             : []
         : [];
     if (suggestions.length === 0) return null;
-    const left = el.type === "character" ? "2.2in" : "0";
+    const left = el.type === "character" && !compact ? "2.2in" : "0";
     return (
       <div
         className="absolute z-10 mt-0.5 min-w-[2in] rounded border border-neutral-200 bg-white text-xs shadow-md dark:border-neutral-700 dark:bg-neutral-900"
@@ -346,18 +430,20 @@ export function ScreenplayEditor({
   function renderCommentButton(el: ScreenplayElement) {
     const elComments = commentsByElement.get(el.id) ?? [];
     const isOpen = openCommentFor === el.id;
+    if (compact && elComments.length === 0 && !isOpen) return null;
     return (
       <div
-        className="absolute -right-7 top-0"
+        className={compact ? "contents" : "absolute -right-7 top-0"}
         style={{ fontFamily: "system-ui, sans-serif" }}
       >
+        {(!compact || elComments.length > 0) && (
         <button
           type="button"
           onClick={() => {
             setOpenCommentFor(isOpen ? null : el.id);
             setNewCommentText("");
           }}
-          className={`p-1 text-xs ${
+          className={`p-1 text-xs ${compact ? "absolute right-0 top-0" : ""} ${
             elComments.length > 0
               ? "text-amber-600"
               : "text-neutral-300 opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 dark:text-neutral-700"
@@ -367,8 +453,11 @@ export function ScreenplayEditor({
         >
           💬{elComments.length > 0 ? elComments.length : ""}
         </button>
+        )}
         {isOpen && (
-          <div className="absolute right-0 z-20 w-64 rounded border border-neutral-200 bg-white p-2 text-xs shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
+          <div
+            className={`${compact ? "mt-1 w-full" : "absolute right-0 z-20 w-64"} rounded border border-neutral-200 bg-white p-2 text-xs shadow-lg dark:border-neutral-700 dark:bg-neutral-900`}
+          >
             {elComments.map((c) => (
               <div
                 key={c.id}
@@ -424,7 +513,9 @@ export function ScreenplayEditor({
       <div key={el.id} className="group relative">
         {el.type === "scene_heading" && (
           <span
-            className="absolute -left-10 select-none text-[10px] text-neutral-500 dark:text-neutral-400"
+            className={`select-none text-[10px] text-neutral-500 dark:text-neutral-400 ${
+              compact ? "mt-2 block" : "absolute -left-10"
+            }`}
             style={{ fontFamily: "system-ui, sans-serif" }}
           >
             {sceneNumbers.get(el.id)}
@@ -432,7 +523,9 @@ export function ScreenplayEditor({
         )}
         {isRevised(el) && (
           <span
-            className="absolute -right-3 select-none text-neutral-500 dark:text-neutral-400"
+            className={`absolute select-none text-neutral-500 dark:text-neutral-400 ${
+              compact ? "right-0 top-0" : "-right-3"
+            }`}
             style={{ fontFamily: "system-ui, sans-serif" }}
           >
             *
@@ -451,11 +544,15 @@ export function ScreenplayEditor({
           onBlur={() => setFocusedId((cur) => (cur === el.id ? null : cur))}
           rows={1}
           placeholder={ELEMENT_LABELS[el.type]}
-          className={`block w-full resize-none overflow-hidden bg-transparent leading-relaxed outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 ${TYPE_STYLES[el.type]}`}
+          autoCapitalize={UPPERCASE_TYPES.includes(el.type) ? "characters" : "sentences"}
+          autoCorrect={UPPERCASE_TYPES.includes(el.type) ? "off" : "on"}
+          className={`block w-full resize-none overflow-hidden bg-transparent leading-relaxed outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 ${
+            compact ? COMPACT_TYPE_STYLES[el.type] : TYPE_STYLES[el.type]
+          }`}
         />
         {renderSuggestions(el, index)}
         {renderCommentButton(el)}
-        {el.type === "scene_heading" && (
+        {!compact && el.type === "scene_heading" && (
           <button
             type="button"
             onClick={() => toggleOmitted(index)}
@@ -465,7 +562,7 @@ export function ScreenplayEditor({
             Omit
           </button>
         )}
-        {el.type === "character" && !el.dualGroup && (
+        {!compact && el.type === "character" && !el.dualGroup && (
           <button
             type="button"
             onClick={() => pairDualDialogue(index)}
@@ -519,13 +616,16 @@ export function ScreenplayEditor({
           const blockA = collectDialogueBlock(elements, i);
           const blockB = collectDialogueBlock(elements, nextIndex);
           nodes.push(
-            <div key={el.id} className="ml-[1in] flex gap-4">
-              <div className="w-1/2">
+            <div
+              key={el.id}
+              className={compact ? "flex flex-col gap-2" : "ml-[1in] flex gap-4"}
+            >
+              <div className={compact ? "w-full" : "w-1/2"}>
                 {blockA.block.map((be) =>
                   renderSingleElement(be, elements.indexOf(be))
                 )}
               </div>
-              <div className="w-1/2">
+              <div className={compact ? "w-full" : "w-1/2"}>
                 {blockB.block.map((be) =>
                   renderSingleElement(be, elements.indexOf(be))
                 )}
@@ -551,50 +651,124 @@ export function ScreenplayEditor({
     return nodes;
   }
 
+  const focusedIndex = focusedId ? elements.findIndex((e) => e.id === focusedId) : -1;
+  const focusedEl = focusedIndex >= 0 ? elements[focusedIndex] : null;
+
   return (
     <div className="w-full">
-      <div className="sticky top-0 z-10 mb-2 flex items-center justify-end gap-1 bg-neutral-100/90 py-1 backdrop-blur dark:bg-black/90">
-        <button
-          type="button"
-          onClick={() => zoomBy(-0.1)}
-          aria-label="Zoom out"
-          className="inline-flex h-8 w-8 items-center justify-center rounded border border-neutral-300 text-sm dark:border-neutral-700"
-        >
-          −
-        </button>
-        <button
-          type="button"
-          onClick={() => setManualZoom(null)}
-          className="min-w-12 rounded border border-neutral-300 px-2 text-xs text-neutral-500 dark:border-neutral-700"
-        >
-          {Math.round(scale * 100)}%
-        </button>
-        <button
-          type="button"
-          onClick={() => zoomBy(0.1)}
-          aria-label="Zoom in"
-          className="inline-flex h-8 w-8 items-center justify-center rounded border border-neutral-300 text-sm dark:border-neutral-700"
-        >
-          +
-        </button>
-      </div>
-      <div ref={containerRef} className="w-full overflow-x-auto">
-        <div style={{ height: pageHeight }} className="flex justify-center">
+      {!compact && (
+        <div className="sticky top-0 z-10 mb-2 flex items-center justify-end gap-1 bg-neutral-100/90 py-1 backdrop-blur dark:bg-black/90">
+          <button
+            type="button"
+            onClick={() => zoomBy(-0.1)}
+            aria-label="Zoom out"
+            className="inline-flex h-8 w-8 items-center justify-center rounded border border-neutral-300 text-sm dark:border-neutral-700"
+          >
+            −
+          </button>
+          <button
+            type="button"
+            onClick={() => setManualZoom(null)}
+            className="min-w-12 rounded border border-neutral-300 px-2 text-xs text-neutral-500 dark:border-neutral-700"
+          >
+            {Math.round(scale * 100)}%
+          </button>
+          <button
+            type="button"
+            onClick={() => zoomBy(0.1)}
+            aria-label="Zoom in"
+            className="inline-flex h-8 w-8 items-center justify-center rounded border border-neutral-300 text-sm dark:border-neutral-700"
+          >
+            +
+          </button>
+        </div>
+      )}
+      <div ref={containerRef} className={compact ? "w-full" : "w-full overflow-x-auto"}>
+        {compact ? (
           <div
             ref={pageRef}
-            className="shrink-0 bg-white p-[1in] text-black shadow-md ring-1 ring-neutral-200 dark:bg-neutral-900 dark:text-neutral-100 dark:ring-neutral-800"
-            style={{
-              width: PAGE_WIDTH_PX,
-              transform: `scale(${scale})`,
-              transformOrigin: "top center",
-              fontFamily: '"Courier New", Courier, monospace',
-              fontSize: "12pt",
-            }}
+            className="rounded bg-white p-3 pb-32 text-black shadow-sm ring-1 ring-neutral-200 dark:bg-neutral-900 dark:text-neutral-100 dark:ring-neutral-800"
+            style={{ fontFamily: '"Courier New", Courier, monospace', fontSize: "16px" }}
           >
             {renderElements()}
           </div>
-        </div>
+        ) : (
+          <div style={{ height: pageHeight }} className="flex justify-center">
+            <div
+              ref={pageRef}
+              className="shrink-0 bg-white p-[1in] text-black shadow-md ring-1 ring-neutral-200 dark:bg-neutral-900 dark:text-neutral-100 dark:ring-neutral-800"
+              style={{
+                width: PAGE_WIDTH_PX,
+                transform: `scale(${scale})`,
+                transformOrigin: "top center",
+                fontFamily: '"Courier New", Courier, monospace',
+                fontSize: "12pt",
+              }}
+            >
+              {renderElements()}
+            </div>
+          </div>
+        )}
       </div>
+
+      {compact && focusedEl && (
+        <div
+          role="toolbar"
+          aria-label="Line format"
+          // Keep the text field focused (and the keyboard up) when a button is tapped.
+          onPointerDown={(e) => e.preventDefault()}
+          onMouseDown={(e) => e.preventDefault()}
+          className="fixed inset-x-0 z-40 border-t border-neutral-200 bg-white/95 backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/95"
+          style={{ bottom: keyboardOffset, fontFamily: "system-ui, sans-serif" }}
+        >
+          <div className="flex gap-1 overflow-x-auto px-2 py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {FORMAT_BUTTONS.map((b) => (
+              <button
+                key={b.type}
+                type="button"
+                onClick={() => setType(focusedIndex, b.type)}
+                aria-pressed={focusedEl.type === b.type}
+                className={`h-10 min-w-14 shrink-0 rounded-md border px-2 text-sm ${
+                  focusedEl.type === b.type
+                    ? "border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900"
+                    : "border-neutral-300 dark:border-neutral-700"
+                }`}
+              >
+                {b.label}
+              </button>
+            ))}
+            <span aria-hidden className="mx-1 w-px shrink-0 bg-neutral-200 dark:bg-neutral-800" />
+            <button
+              type="button"
+              onClick={() => {
+                setOpenCommentFor(openCommentFor === focusedEl.id ? null : focusedEl.id);
+                setNewCommentText("");
+              }}
+              className="h-10 min-w-14 shrink-0 rounded-md border border-neutral-300 px-2 text-sm dark:border-neutral-700"
+            >
+              Note
+            </button>
+            {focusedEl.type === "scene_heading" && (
+              <button
+                type="button"
+                onClick={() => toggleOmitted(focusedIndex)}
+                className="h-10 min-w-14 shrink-0 rounded-md border border-neutral-300 px-2 text-sm dark:border-neutral-700"
+              >
+                Omit
+              </button>
+            )}
+            {focusedEl.type === "character" && !focusedEl.dualGroup && (
+              <button
+                type="button"
+                onClick={() => pairDualDialogue(focusedIndex)}
+                className="h-10 min-w-14 shrink-0 rounded-md border border-neutral-300 px-2 text-sm dark:border-neutral-700"
+              >
+                Dual
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

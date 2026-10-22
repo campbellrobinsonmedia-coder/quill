@@ -13,7 +13,9 @@ import {
   SortableContext,
   arrayMove,
   horizontalListSortingStrategy,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { useMediaQuery } from "@/lib/use-media-query";
 import { BeatCard, type BeatData } from "@/components/beat-card";
 import {
   createSeriesBeat,
@@ -50,6 +52,7 @@ export function BeatBoard({
   }
   const [newTitle, setNewTitle] = useState("");
   const [isPending, startTransition] = useTransition();
+  const stacked = useMediaQuery("(max-width: 639px)");
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
@@ -113,8 +116,8 @@ export function BeatBoard({
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
-          <SortableContext items={beats.map((b) => b.id)} strategy={horizontalListSortingStrategy}>
-            <div className="flex items-start gap-3 overflow-x-auto pb-4">
+          <SortableContext items={beats.map((b) => b.id)} strategy={stacked ? verticalListSortingStrategy : horizontalListSortingStrategy}>
+            <div className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-start sm:overflow-x-auto">
               {beats.map((beat, index) => (
                 <BeatCard
                   key={beat.id}

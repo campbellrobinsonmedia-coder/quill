@@ -23,6 +23,15 @@ export function ReadAloud({
     window.speechSynthesis.onvoiceschanged = load;
   }, []);
 
+  // Navigating away shouldn't leave the browser reading the script aloud.
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
   function voiceFor(character: string | null): SpeechSynthesisVoice | undefined {
     const voices = voicesRef.current;
     if (voices.length === 0) return undefined;

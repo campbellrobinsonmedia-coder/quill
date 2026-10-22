@@ -43,8 +43,9 @@ export function Menu({
       >
         {label} <span aria-hidden>▾</span>
       </button>
-      {open && (
-        <div
+      {/* Kept mounted (just hidden) so stateful items like Read aloud survive closing. */}
+      <div
+          hidden={!open}
           role="menu"
           // Choosing a link or button closes the menu; typing in an input inside it doesn't.
           onClick={(e) => {
@@ -54,7 +55,6 @@ export function Menu({
         >
           {children}
         </div>
-      )}
     </div>
   );
 }

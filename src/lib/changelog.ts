@@ -152,6 +152,18 @@ export const CHANGELOG: ChangelogRelease[] = [
       "Automated tests and a CI check (lint, types, tests, build) on every push",
     ],
   },
+  {
+    version: "v15",
+    title: "Mobile writing mode",
+    items: [
+      "Script text reflows at a readable size on phones instead of shrinking the whole page to 40%",
+      "A format bar above the keyboard (Scene / Action / Char / Paren / Dial / Trans, plus Note, Omit and Dual) replaces the Tab key",
+      "Compact toolbar: one Menu holds export, dialogue-only, read-aloud, lock and history; version history opens full-screen",
+      "Enter works on Android keyboards that don't send a key event",
+      "Outline cards and beats stack as a full-width vertical list on phones, with larger drag handles",
+      "Read aloud stops when you leave the page",
+    ],
+  },
 ];
 
 // Not built yet — discussed and agreed as direction, not a fixed commitment.
