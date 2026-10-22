@@ -18,6 +18,7 @@ export type OutlineCardData = {
   emotion: string | null;
   storyThread: string | null;
   linkedSceneId: string | null;
+  beatId: string | null;
   characters: { id: string; name: string }[];
 };
 
@@ -27,15 +28,17 @@ export function OutlineCard({
   projectId,
   availableCharacters,
   availableScenes = [],
+  beatOptions = [],
 }: {
   card: OutlineCardData;
   number: number;
   projectId: string;
   availableCharacters: { id: string; name: string }[];
   availableScenes?: { id: string; label: string }[];
+  beatOptions?: { id: string; title: string }[];
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: card.id });
+    useSortable({ id: card.id, data: { type: "card" } });
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(card.title);
   const [summary, setSummary] = useState(card.summary ?? "");
@@ -45,6 +48,7 @@ export function OutlineCard({
   const [storyThread, setStoryThread] = useState(card.storyThread ?? "");
   const [linkedSceneId, setLinkedSceneId] = useState(card.linkedSceneId ?? "");
   const [colorTag, setColorTag] = useState(card.colorTag ?? "neutral");
+  const [beatId, setBeatId] = useState(card.beatId ?? "");
   const [characterIds, setCharacterIds] = useState(
     new Set(card.characters.map((c) => c.id))
   );
@@ -76,6 +80,7 @@ export function OutlineCard({
         emotion: emotion || null,
         storyThread: storyThread || null,
         linkedSceneId: linkedSceneId || null,
+        beatId: beatOptions.length > 0 ? beatId || null : undefined,
         colorTag,
         characterIds: Array.from(characterIds),
       });
@@ -87,7 +92,7 @@ export function OutlineCard({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex w-full flex-col gap-2 rounded-md sm:w-64 border border-neutral-200 bg-white p-3 shadow-sm dark:border-neutral-800 dark:bg-neutral-900"
+      className="flex w-full flex-col gap-2 rounded-md border border-neutral-200 bg-white p-3 shadow-sm dark:border-neutral-800 dark:bg-neutral-900"
     >
       <div className="flex items-start justify-between gap-2">
         <span className="mt-1.5 shrink-0 text-xs font-medium tabular-nums text-neutral-500 dark:text-neutral-400">
@@ -189,6 +194,21 @@ export function OutlineCard({
               <option value="C" />
             </datalist>
           </div>
+          {beatOptions.length > 0 && (
+            <select
+              value={beatId}
+              onChange={(e) => setBeatId(e.target.value)}
+              aria-label="Beat"
+              className="w-full rounded border border-neutral-300 px-2 py-1 text-xs outline-none dark:border-neutral-700 dark:bg-neutral-900"
+            >
+              <option value="">Unplanned (no beat)</option>
+              {beatOptions.map((b) => (
+                <option key={b.id} value={b.id}>
+                  Beat: {b.title}
+                </option>
+              ))}
+            </select>
+          )}
           {availableScenes.length > 0 && (
             <select
               value={linkedSceneId}

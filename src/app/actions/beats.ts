@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
+import { normalizeOutlineOrder } from "@/lib/outline-order";
+import { BEAT_TEMPLATES } from "@/lib/beat-templates";
 
 async function assertOwnsSeries(userId: string, seriesId: string) {
   const series = await prisma.series.findFirst({
@@ -197,6 +199,10 @@ export async function deleteBeat(beatId: string) {
   const beat = await getOwnedBeat(userId, beatId);
 
   await prisma.beat.delete({ where: { id: beatId } });
+  // Scenes under a deleted project-level beat fall back to "unplanned".
+  if (beat.projectId && !beat.seasonId && !beat.seriesId) {
+    await normalizeOutlineOrder(beat.projectId);
+  }
 
   revalidateForBeatScope({
     seriesId: beat.seriesId,
@@ -211,14 +217,53 @@ export async function reorderBeats(
   orderedIds: string[]
 ) {
   const userId = await requireUserId();
-  if (scope.seriesId) await assertOwnsSeries(userId, scope.seriesId);
-  else if (scope.seasonId) await assertOwnsSeason(userId, scope.seasonId);
-  else if (scope.projectId) await assertOwnsProject(userId, scope.projectId);
-  else throw new Error("Invalid scope");
+  let where: { seriesId?: string; seasonId?: string; projectId?: string; AND?: object[] };
+  if (scope.seriesId) {
+    await assertOwnsSeries(userId, scope.seriesId);
+    where = { seriesId: scope.seriesId };
+  } else if (scope.seasonId) {
+    await assertOwnsSeason(userId, scope.seasonId);
+    where = { seasonId: scope.seasonId };
+  } else if (scope.projectId) {
+    await assertOwnsProject(userId, scope.projectId);
+    where = { projectId: scope.projectId, AND: [{ seasonId: null }, { seriesId: null }] };
+  } else {
+    throw new Error("Invalid scope");
+  }
+
+  // Only reorder beats that actually belong to this scope.
+  const owned = await prisma.beat.findMany({ where, select: { id: true } });
+  const ownedSet = new Set(owned.map((b) => b.id));
+  if (orderedIds.some((id) => !ownedSet.has(id))) throw new Error("Invalid beat");
 
   await prisma.$transaction(
     orderedIds.map((id, index) =>
       prisma.beat.update({ where: { id }, data: { order: index } })
     )
   );
+
+  if (scope.projectId) await normalizeOutlineOrder(scope.projectId);
+}
+
+// Adds a ready-made set of beats (three acts, Save the Cat, …) to the end of a
+// script's Plan board.
+export async function applyBeatTemplate(projectId: string, templateId: string) {
+  const userId = await requireUserId();
+  await assertOwnsProject(userId, projectId);
+
+  const template = BEAT_TEMPLATES.find((t) => t.id === templateId);
+  if (!template) throw new Error("Unknown template");
+
+  const start = await nextOrder({ projectId, seasonId: null, seriesId: null });
+  await prisma.beat.createMany({
+    data: template.beats.map((b, i) => ({
+      projectId,
+      title: b.title,
+      summary: b.summary,
+      order: start + i,
+    })),
+  });
+
+  await normalizeOutlineOrder(projectId);
+  revalidatePath(`/projects/${projectId}`);
 }

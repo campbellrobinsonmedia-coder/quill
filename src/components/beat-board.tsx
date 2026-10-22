@@ -33,14 +33,12 @@ export function BeatBoard({
   scope,
   initialBeats,
   episodeOptions,
-  cardOptions,
   placeholder = "New beat…",
   emptyMessage = "No beats yet.",
 }: {
   scope: Scope;
   initialBeats: BeatData[];
   episodeOptions?: { id: string; title: string; episodeNumber: number | null }[];
-  cardOptions?: { id: string; title: string }[];
   placeholder?: string;
   emptyMessage?: string;
 }) {
@@ -124,7 +122,6 @@ export function BeatBoard({
                   beat={beat}
                   number={index + 1}
                   episodeOptions={episodeOptions}
-                  cardOptions={cardOptions}
                 />
               ))}
             </div>

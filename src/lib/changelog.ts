@@ -186,6 +186,18 @@ export const CHANGELOG: ChangelogRelease[] = [
       "Edit an idea's title, text and tags in place",
     ],
   },
+  {
+    version: "v18",
+    title: "One Plan board",
+    items: [
+      "Beats and scene cards are now a single board: each beat is a column, and its scenes sit inside it. Scenes that aren't under a beat yet wait in an Unplanned column",
+      "Drag scenes between beats and reorder beats; on a phone the beats stack and each scene has a Beat picker in its editor",
+      "Beat templates — Three acts, Save the Cat (15 beats), Hero's journey, TV hour — add a ready-made set with guidance on each beat",
+      "Existing beat-to-card links were carried over automatically (each scene lands under the first beat that pointed at it)",
+      "An episode's Plan page lists the season-arc beats assigned to it",
+      "Fixed: reordering cards and beats now verifies they belong to you",
+    ],
+  },
 ];
 
 // Not built yet — discussed and agreed as direction, not a fixed commitment.

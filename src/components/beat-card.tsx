@@ -12,7 +12,6 @@ export type BeatData = {
   title: string;
   summary: string | null;
   projectId: string | null;
-  linkedCardId: string | null;
   references?: ReferenceData[];
 };
 
@@ -20,14 +19,11 @@ export function BeatCard({
   beat,
   number,
   episodeOptions,
-  cardOptions,
 }: {
   beat: BeatData;
   number: number;
   /** Season-scoped beats only: episodes this beat can be assigned to. */
   episodeOptions?: { id: string; title: string; episodeNumber: number | null }[];
-  /** Project-scoped beats only: outline cards this beat can link to once broken down. */
-  cardOptions?: { id: string; title: string }[];
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: beat.id });
@@ -35,7 +31,6 @@ export function BeatCard({
   const [title, setTitle] = useState(beat.title);
   const [summary, setSummary] = useState(beat.summary ?? "");
   const [projectId, setProjectId] = useState(beat.projectId ?? "");
-  const [linkedCardId, setLinkedCardId] = useState(beat.linkedCardId ?? "");
   const [isPending, startTransition] = useTransition();
   const toast = useToast();
 
@@ -46,7 +41,6 @@ export function BeatCard({
   };
 
   const linkedEpisode = episodeOptions?.find((e) => e.id === beat.projectId);
-  const linkedCard = cardOptions?.find((c) => c.id === beat.linkedCardId);
 
   function save() {
     startTransition(async () => {
@@ -54,7 +48,6 @@ export function BeatCard({
         title: title.trim() || "Untitled",
         summary,
         ...(episodeOptions ? { projectId: projectId || null } : {}),
-        linkedCardId: linkedCardId || null,
       });
       setEditing(false);
     });
@@ -88,9 +81,6 @@ export function BeatCard({
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 Episode {linkedEpisode.episodeNumber}: {linkedEpisode.title}
               </p>
-            )}
-            {linkedCard && (
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">→ {linkedCard.title}</p>
             )}
           </button>
         ) : (
@@ -133,20 +123,6 @@ export function BeatCard({
               {episodeOptions.map((ep) => (
                 <option key={ep.id} value={ep.id}>
                   Episode {ep.episodeNumber}: {ep.title}
-                </option>
-              ))}
-            </select>
-          )}
-          {cardOptions && cardOptions.length > 0 && (
-            <select
-              value={linkedCardId}
-              onChange={(e) => setLinkedCardId(e.target.value)}
-              className="w-full rounded border border-neutral-300 px-2 py-1 text-xs outline-none dark:border-neutral-700 dark:bg-neutral-900"
-            >
-              <option value="">Not broken into a card yet</option>
-              {cardOptions.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.title}
                 </option>
               ))}
             </select>
