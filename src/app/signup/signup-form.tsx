@@ -3,11 +3,12 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { signupAction } from "@/app/actions/auth";
+import { rememberDevice, signupAction } from "@/app/actions/auth";
 
 export function SignupForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [checkEmail, setCheckEmail] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function handleSubmit(formData: FormData) {
@@ -16,6 +17,10 @@ export function SignupForm() {
       const result = await signupAction({}, formData);
       if (result.error) {
         setError(result.error);
+        return;
+      }
+      if (result.needsVerification) {
+        setCheckEmail(true);
         return;
       }
 
@@ -30,9 +35,22 @@ export function SignupForm() {
         setError("Account created, but sign-in failed. Try logging in.");
         return;
       }
+      // Best effort: failing to remember this device must never block signing in.
+      await rememberDevice().catch(() => {});
       router.push("/onboarding");
       router.refresh();
     });
+  }
+
+  if (checkEmail) {
+    return (
+      <div role="status" className="space-y-2 text-center text-sm">
+        <p className="font-medium">Check your email</p>
+        <p className="text-neutral-500">
+          We sent you a link to confirm your address. Follow it, then log in.
+        </p>
+      </div>
+    );
   }
 
   return (

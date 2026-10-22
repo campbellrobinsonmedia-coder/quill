@@ -21,17 +21,41 @@ enum ProjectStatus {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  passwordHash  String
-  createdAt     DateTime @default(now())
+  id              String    @id @default(cuid())
+  email           String    @unique
+  passwordHash    String
+  createdAt       DateTime  @default(now())
   // Daily writing goal in words; null means no goal set.
-  dailyWordGoal Int?
+  dailyWordGoal   Int?
+  // When the address was confirmed via an emailed link. Accounts that existed
+  // before email verification was introduced are treated as confirmed.
+  emailVerifiedAt DateTime?
 
   projects    Project[]
   ideas       Idea[]
   series      Series[]
   writingDays WritingDay[]
+  authTokens  AuthToken[]
+}
+
+enum AuthTokenKind {
+  VERIFY_EMAIL
+  RESET_PIN
+}
+
+// A single-use link token emailed to a user. Only a SHA-256 hash is stored, so
+// a database leak doesn't expose usable links.
+model AuthToken {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      AuthTokenKind
+  tokenHash String        @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime      @default(now())
+
+  @@index([userId, kind])
 }
 
 // One row per failed login, keyed by "email:<addr>" or "ip:<addr>", used to

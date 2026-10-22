@@ -229,6 +229,16 @@ export const CHANGELOG: ChangelogRelease[] = [
       "Fixed: deleting a script left its beats behind as unreachable leftovers; they're now deleted with the script, and existing leftovers are cleaned up",
     ],
   },
+  {
+    version: "v22",
+    title: "Account security",
+    items: [
+      "Wrong-PIN lockout no longer lets anyone lock you out: tries are limited per account per network, a network that sprays many accounts is blocked, and devices you've signed in from before are exempt from the \"attacked from everywhere\" limit",
+      "Sign-ups are limited per network, and changing your PIN limits wrong-PIN guesses too",
+      "Email verification and \"Forgot your PIN?\" by email, built to switch on as soon as an email provider key is added — until then the app behaves as before; reset links work once, expire in an hour, and never reveal whether an address has an account",
+      "Fixed: the log-in form no longer clears your email after a wrong PIN",
+    ],
+  },
 ];
 
 // Not built yet — discussed and agreed as direction, not a fixed commitment.
@@ -237,6 +247,7 @@ export const ROADMAP: string[] = [
   "Backup as a zipped FDX + Fountain bundle, and embedding uploaded files (JSON backup and restore exist today)",
   "Air order vs. production order for episodes",
   "Offline-first drafting (local queue, sync on reconnect)",
+  "Passkeys (sign in with your phone or laptop instead of a PIN) and a sign-out-everywhere option",
   "Read-only, watermarked share links for sending drafts to collaborators",
   "Character relationship map (visual graph)",
   "Structural gap-checks (a storyline thread that never resolves, an act with no midpoint)",

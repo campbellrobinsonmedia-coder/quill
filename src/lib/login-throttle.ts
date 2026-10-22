@@ -1,51 +1,62 @@
-import { prisma } from "@/lib/prisma";
+import {
+  clearHits,
+  clientIp,
+  hitCount,
+  HOUR,
+  MINUTE,
+  recordHits,
+} from "@/lib/rate-limit";
 
-const WINDOW_MS = 15 * 60 * 1000;
-const MAX_FAILURES_PER_EMAIL = 5;
-const MAX_FAILURES_PER_IP = 20;
+export { clientIp };
 
-function keysFor(email: string, ip: string | null) {
-  return {
-    emailKey: `email:${email}`,
-    ipKey: ip ? `ip:${ip}` : null,
-  };
-}
+// Wrong-PIN limits. A 4-digit PIN has only 10,000 values, so guessing has to
+// be slow — but a limit keyed on the email alone would let anyone lock a real
+// user out just by failing on purpose. So the limits are layered:
+//
+//   pair  one email from one network: a handful of tries, then wait
+//   ip    one network across all emails: stops it fishing through accounts
+//   email one email from anywhere: a high backstop against a spread-out
+//         attack — but devices the user has signed in from before (they carry
+//         a signed cookie) are exempt, so an attacker can't lock the owner out
+export const LIMITS = {
+  pair: { max: 5, windowMs: 15 * MINUTE },
+  ip: { max: 20, windowMs: 15 * MINUTE },
+  email: { max: 25, windowMs: HOUR },
+} as const;
 
-export function clientIp(headers: Headers): string | null {
-  const forwarded = headers.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0].trim() || null;
-  return headers.get("x-real-ip");
-}
+export type FailureCounts = { pair: number; ip: number; email: number };
 
-async function countRecent(key: string, since: Date) {
-  return prisma.loginAttempt.count({
-    where: { key, createdAt: { gte: since } },
-  });
-}
-
-export async function isLockedOut(email: string, ip: string | null) {
-  const since = new Date(Date.now() - WINDOW_MS);
-  const { emailKey, ipKey } = keysFor(email, ip);
-  const [emailFailures, ipFailures] = await Promise.all([
-    countRecent(emailKey, since),
-    ipKey ? countRecent(ipKey, since) : Promise.resolve(0),
-  ]);
+export function isLocked(counts: FailureCounts, trustedDevice: boolean): boolean {
   return (
-    emailFailures >= MAX_FAILURES_PER_EMAIL || ipFailures >= MAX_FAILURES_PER_IP
+    counts.pair >= LIMITS.pair.max ||
+    counts.ip >= LIMITS.ip.max ||
+    (!trustedDevice && counts.email >= LIMITS.email.max)
   );
 }
 
-export async function recordFailure(email: string, ip: string | null) {
-  const { emailKey, ipKey } = keysFor(email, ip);
-  await prisma.loginAttempt.createMany({
-    data: [{ key: emailKey }, ...(ipKey ? [{ key: ipKey }] : [])],
-  });
-  // Opportunistic cleanup so the table doesn't grow without bound.
-  await prisma.loginAttempt.deleteMany({
-    where: { createdAt: { lt: new Date(Date.now() - WINDOW_MS) } },
-  });
+const pairKey = (email: string, ip: string | null) => `pair:${email}|${ip ?? "unknown"}`;
+const ipKey = (ip: string) => `ip:${ip}`;
+const emailKey = (email: string) => `email:${email}`;
+
+export async function isLockedOut(
+  email: string,
+  ip: string | null,
+  trustedDevice: boolean
+): Promise<boolean> {
+  const [pair, ipCount, emailCount] = await Promise.all([
+    hitCount(pairKey(email, ip), LIMITS.pair.windowMs),
+    ip ? hitCount(ipKey(ip), LIMITS.ip.windowMs) : Promise.resolve(0),
+    hitCount(emailKey(email), LIMITS.email.windowMs),
+  ]);
+  return isLocked({ pair, ip: ipCount, email: emailCount }, trustedDevice);
 }
 
-export async function clearFailures(email: string) {
-  await prisma.loginAttempt.deleteMany({ where: { key: `email:${email}` } });
+export async function recordFailure(email: string, ip: string | null) {
+  await recordHits([pairKey(email, ip), emailKey(email), ...(ip ? [ipKey(ip)] : [])]);
+}
+
+// A correct PIN forgives that network's earlier misses. It deliberately leaves
+// the all-networks counter alone, so one lucky guess can't reset an attack.
+export async function clearFailures(email: string, ip: string | null) {
+  await clearHits([pairKey(email, ip)]);
 }

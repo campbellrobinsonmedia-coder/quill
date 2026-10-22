@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { LoginForm } from "./login-form";
 import type { Metadata } from "next";
+import { emailEnabled } from "@/lib/email";
 
 export const metadata: Metadata = { title: "Log in" };
 
@@ -16,6 +17,13 @@ export default function LoginPage() {
         <Suspense>
           <LoginForm />
         </Suspense>
+        {emailEnabled() && (
+          <p className="text-center text-sm text-neutral-500">
+            <Link href="/forgot-pin" className="underline underline-offset-2">
+              Forgot your PIN?
+            </Link>
+          </p>
+        )}
         <p className="text-center text-sm text-neutral-500">
           Don&apos;t have an account?{" "}
           <Link href="/signup" className="underline underline-offset-2">

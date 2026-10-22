@@ -9,9 +9,15 @@ import {
   isLockedOut,
   recordFailure,
 } from "@/lib/login-throttle";
+import { DEVICE_COOKIE, readCookie, verifyDeviceToken } from "@/lib/trusted-device";
+import { emailEnabled } from "@/lib/email";
 
 class TooManyAttempts extends CredentialsSignin {
   code = "too_many_attempts";
+}
+
+class EmailNotVerified extends CredentialsSignin {
+  code = "email_not_verified";
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -32,13 +38,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const normalizedEmail = email.toLowerCase().trim();
         const ip = clientIp(request.headers);
 
-        if (await isLockedOut(normalizedEmail, ip)) {
-          throw new TooManyAttempts();
-        }
-
         const user = await prisma.user.findUnique({
           where: { email: normalizedEmail },
         });
+        const trustedDevice = user
+          ? verifyDeviceToken(readCookie(request.headers.get("cookie"), DEVICE_COOKIE), user.id)
+          : false;
+
+        if (await isLockedOut(normalizedEmail, ip, trustedDevice)) {
+          throw new TooManyAttempts();
+        }
+
         const valid = user
           ? await bcrypt.compare(password, user.passwordHash)
           : false;
@@ -47,7 +57,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        await clearFailures(normalizedEmail);
+        await clearFailures(normalizedEmail, ip);
+        if (emailEnabled() && !user.emailVerifiedAt) throw new EmailNotVerified();
         return { id: user.id, email: user.email };
       },
     }),

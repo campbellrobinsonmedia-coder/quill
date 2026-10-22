@@ -5,6 +5,7 @@ import { GoalForm } from "./goal-form";
 import { RestoreBackup } from "./restore-backup";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { CHANGELOG, ROADMAP } from "@/lib/changelog";
+import { emailEnabled } from "@/lib/email";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -66,9 +67,9 @@ export default async function SettingsPage() {
         <h2 className="text-sm font-medium text-neutral-500">Account</h2>
         <ChangePinForm />
         <p className="text-xs text-neutral-500 dark:text-neutral-400">
-          There&apos;s currently no self-serve way to recover a forgotten PIN
-          without access to this page. Pick something you&apos;ll remember,
-          and consider writing it down somewhere safe.
+          {emailEnabled()
+            ? `If you forget your PIN, a reset link can be emailed to ${user.email} from the log-in page.`
+            : "PIN recovery by email isn't set up for this site yet, so there's no way to recover a forgotten PIN. Pick something you'll remember, and consider writing it down somewhere safe."}
         </p>
       </section>
 
