@@ -693,7 +693,7 @@ export function ScreenplayEditor({
             {renderElements()}
           </div>
         ) : (
-          <div style={{ height: pageHeight }} className="flex justify-center">
+          <div style={{ height: pageHeight }} className="flex items-start justify-center">
             <div
               ref={pageRef}
               className="shrink-0 bg-white p-[1in] text-black shadow-md ring-1 ring-neutral-200 dark:bg-neutral-900 dark:text-neutral-100 dark:ring-neutral-800"

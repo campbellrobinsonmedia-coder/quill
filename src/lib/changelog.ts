@@ -198,6 +198,16 @@ export const CHANGELOG: ChangelogRelease[] = [
       "Fixed: reordering cards and beats now verifies they belong to you",
     ],
   },
+  {
+    version: "v19",
+    title: "Scene sync",
+    items: [
+      "Plan board ↔ script: scenes in the script that have no card get a one-click \"Add cards\"; each linked card shows the scene it points to, and flags it if the scene was deleted",
+      "When the scene order differs between script and board, choose a direction: \"Match script to board\" (the current script is saved to version history first) or \"Match board to script\" (reorders scenes within each beat)",
+      "New Scenes panel in the editor: every scene with its number, linked card and beat; click to jump, move scenes up or down, or add a card for a scene",
+      "Fixed: on narrower screens the script page's white paper could end partway down the text",
+    ],
+  },
 ];
 
 // Not built yet — discussed and agreed as direction, not a fixed commitment.

@@ -28,6 +28,11 @@ import { useToast } from "@/components/toast";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { createProjectBeat, applyBeatTemplate, reorderBeats } from "@/app/actions/beats";
 import { saveOutlineLayout } from "@/app/actions/outline";
+import {
+  addCardsForScenes,
+  reorderOutlineToScript,
+  reorderScriptToOutline,
+} from "@/app/actions/scene-sync";
 import { BEAT_TEMPLATES } from "@/lib/beat-templates";
 import {
   UNPLANNED,
@@ -41,6 +46,14 @@ import {
 } from "@/lib/plan-layout";
 
 type OverviewBeat = { id: string; title: string; summary: string | null };
+
+export type ScriptSync = {
+  unlinkedScenes: number;
+  scriptOutOfOrder: boolean;
+  orphanedCardIds: string[];
+  /** scene heading id -> label, for showing which scene a card is linked to */
+  sceneLabels: Record<string, string>;
+};
 
 // Cards hit-test against other cards and column bodies; columns only against
 // other columns. Without this the column wrapper swallows every card drop.
@@ -73,6 +86,7 @@ export function PlanBoard({
   availableCharacters,
   availableScenes = [],
   seasonBeats = [],
+  sync = null,
 }: {
   projectId: string;
   initialBeats: (PlanBeat & { order: number })[];
@@ -80,6 +94,7 @@ export function PlanBoard({
   availableCharacters: { id: string; name: string }[];
   availableScenes?: { id: string; label: string }[];
   seasonBeats?: OverviewBeat[];
+  sync?: ScriptSync | null;
 }) {
   const toast = useToast();
   const stacked = useMediaQuery("(max-width: 639px)");
@@ -224,6 +239,8 @@ export function PlanBoard({
         availableCharacters={availableCharacters}
         availableScenes={availableScenes}
         beatOptions={beatOptions}
+        sceneLabel={card.linkedSceneId ? sync?.sceneLabels[card.linkedSceneId] : undefined}
+        sceneMissing={sync?.orphanedCardIds.includes(id) ?? false}
       />
     );
   }
@@ -259,6 +276,10 @@ export function PlanBoard({
           ))}
         </Menu>
       </div>
+
+      {sync && (sync.unlinkedScenes > 0 || sync.scriptOutOfOrder) && (
+        <ScriptSyncBar projectId={projectId} sync={sync} />
+      )}
 
       {seasonBeats.length > 0 && (
         <details className="rounded-md border border-neutral-200 p-3 text-sm dark:border-neutral-800">
@@ -342,6 +363,82 @@ export function PlanBoard({
           ) : null}
         </DragOverlay>
       </DndContext>
+    </div>
+  );
+}
+
+function ScriptSyncBar({ projectId, sync }: { projectId: string; sync: ScriptSync }) {
+  const toast = useToast();
+  const [isPending, startTransition] = useTransition();
+
+  function run(action: () => Promise<unknown>, success: string) {
+    startTransition(async () => {
+      try {
+        await action();
+        toast.success(success);
+      } catch {
+        toast.error("That didn't work — try again");
+      }
+    });
+  }
+
+  const button =
+    "inline-flex h-9 items-center rounded-md border border-neutral-300 px-3 text-xs hover:bg-white disabled:opacity-60 dark:border-neutral-600 dark:hover:bg-neutral-800";
+
+  return (
+    <div
+      role="status"
+      className="space-y-2 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100"
+    >
+      {sync.unlinkedScenes > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p>
+            {sync.unlinkedScenes} scene{sync.unlinkedScenes === 1 ? "" : "s"} in your script
+            {sync.unlinkedScenes === 1 ? " doesn't" : " don't"} have a card yet.
+          </p>
+          <button
+            type="button"
+            disabled={isPending}
+            className={button}
+            onClick={() => run(() => addCardsForScenes(projectId), "Cards added")}
+          >
+            Add cards
+          </button>
+        </div>
+      )}
+      {sync.scriptOutOfOrder && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p>The scenes are in a different order in the script than on this board.</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={isPending}
+              className={button}
+              onClick={() => {
+                if (
+                  !window.confirm(
+                    "Rearrange the script's scenes to follow this board? Your current script is saved to version history first, so you can restore it."
+                  )
+                )
+                  return;
+                run(() => reorderScriptToOutline(projectId), "Script reordered");
+              }}
+            >
+              Match script to board
+            </button>
+            <button
+              type="button"
+              disabled={isPending}
+              className={button}
+              onClick={() =>
+                run(() => reorderOutlineToScript(projectId), "Board reordered within beats")
+              }
+            >
+              Match board to script
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

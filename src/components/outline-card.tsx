@@ -29,6 +29,8 @@ export function OutlineCard({
   availableCharacters,
   availableScenes = [],
   beatOptions = [],
+  sceneLabel,
+  sceneMissing = false,
 }: {
   card: OutlineCardData;
   number: number;
@@ -36,6 +38,10 @@ export function OutlineCard({
   availableCharacters: { id: string; name: string }[];
   availableScenes?: { id: string; label: string }[];
   beatOptions?: { id: string; title: string }[];
+  /** Label of the script scene this card is linked to, e.g. "3. INT. ATTIC - DAY". */
+  sceneLabel?: string;
+  /** The linked scene no longer exists in the script. */
+  sceneMissing?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: card.id, data: { type: "card" } });
@@ -144,13 +150,34 @@ export function OutlineCard({
               {[card.location, card.emotion].filter(Boolean).join(" · ")}
             </p>
           )}
-          {card.linkedSceneId && (
+          {card.linkedSceneId && !sceneMissing && (
             <Link
               href={`/projects/${projectId}/write?scene=${card.linkedSceneId}`}
-              className="text-xs text-neutral-500 underline underline-offset-2 hover:text-neutral-900 dark:hover:text-neutral-100"
+              className="block truncate text-xs text-neutral-500 underline underline-offset-2 hover:text-neutral-900 dark:hover:text-neutral-100"
             >
-              → Go to scene
+              → {sceneLabel ?? "Go to scene"}
             </Link>
+          )}
+          {card.linkedSceneId && sceneMissing && (
+            <p className="text-xs text-amber-700 dark:text-amber-400">
+              Its scene was removed from the script.{" "}
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() =>
+                  startTransition(async () => {
+                    try {
+                      await updateCard(card.id, { linkedSceneId: null });
+                    } catch {
+                      toast.error("Couldn't unlink — try again");
+                    }
+                  })
+                }
+                className="underline underline-offset-2"
+              >
+                Unlink
+              </button>
+            </p>
           )}
           {card.characters.length > 0 && (
             <div className="flex flex-wrap gap-1">

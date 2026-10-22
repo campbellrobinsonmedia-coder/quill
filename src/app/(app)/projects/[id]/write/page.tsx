@@ -31,7 +31,7 @@ export default async function WritePage({
     });
   }
 
-  const [versions, characters, worldNotes, comments, lastLockedVersion] = await Promise.all([
+  const [versions, characters, worldNotes, comments, lastLockedVersion, outlineCards] = await Promise.all([
     prisma.draftVersion.findMany({
       where: { draftId: draft.id },
       orderBy: { createdAt: "desc" },
@@ -60,6 +60,16 @@ export default async function WritePage({
           select: { content: true, revisionColor: true },
         })
       : null,
+    prisma.outlineCard.findMany({
+      where: { projectId: id },
+      orderBy: { order: "asc" },
+      select: {
+        id: true,
+        title: true,
+        linkedSceneId: true,
+        beat: { select: { title: true } },
+      },
+    }),
   ]);
 
   return (
@@ -76,6 +86,12 @@ export default async function WritePage({
       }
       initialRevisionColor={lastLockedVersion?.revisionColor ?? null}
       initialComments={comments}
+      outlineCards={outlineCards.map((c) => ({
+        id: c.id,
+        title: c.title,
+        linkedSceneId: c.linkedSceneId,
+        beatTitle: c.beat?.title ?? null,
+      }))}
     />
   );
 }

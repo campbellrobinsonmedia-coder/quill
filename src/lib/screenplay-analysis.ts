@@ -30,7 +30,7 @@ export type CharacterReportRow = {
 const HEADING_RE =
   /^(INT\.\/EXT\.|INT\/EXT\.|I\/E\.|INT\.|EXT\.|EST\.)?\s*(.*?)(?:\s*-\s*(.*))?$/i;
 
-function parseSceneHeading(text: string): { prefix: string; location: string; time: string } {
+export function parseSceneHeading(text: string): { prefix: string; location: string; time: string } {
   const match = text.match(HEADING_RE);
   if (!match) return { prefix: "", location: text.trim(), time: "" };
   return {

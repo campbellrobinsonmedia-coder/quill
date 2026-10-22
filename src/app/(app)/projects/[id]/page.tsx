@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getProjectOrNotFound } from "@/lib/get-project";
 import { PlanBoard } from "@/components/plan-board";
 import { listScenes, type DraftContent } from "@/lib/draft-content";
+import { findOrphanedCards, findUnlinkedScenes, isScriptInOrder } from "@/lib/scene-sync";
 import type { Metadata } from "next";
 
 // A layout's title template doesn't apply to the page in its own segment,
@@ -89,6 +90,23 @@ export default async function OutlinePage({
     ? listScenes(draft.content as unknown as DraftContent)
     : [];
 
+  const draftContent = draft ? (draft.content as unknown as DraftContent) : null;
+  let sync = null;
+  if (draftContent?.type === "screenplay") {
+    const elements = draftContent.elements;
+    const outlineOrder = cards.filter((c) => c.linkedSceneId).map((c) => c.linkedSceneId!);
+    const omitted = new Set(elements.filter((e) => e.omitted).map((e) => e.id));
+    sync = {
+      unlinkedScenes: findUnlinkedScenes(
+        elements,
+        cards.map((c) => c.linkedSceneId)
+      ).filter((s) => s.text && !omitted.has(s.id)).length,
+      scriptOutOfOrder: !isScriptInOrder(elements, outlineOrder),
+      orphanedCardIds: findOrphanedCards(cards, elements).map((c) => c.id),
+      sceneLabels: Object.fromEntries(availableScenes.map((s) => [s.id, s.label])),
+    };
+  }
+
   return (
     <PlanBoard
       key={id}
@@ -98,6 +116,7 @@ export default async function OutlinePage({
       availableCharacters={characters}
       availableScenes={availableScenes}
       seasonBeats={seasonBeats}
+      sync={sync}
     />
   );
 }

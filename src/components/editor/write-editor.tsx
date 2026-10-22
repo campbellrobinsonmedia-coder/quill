@@ -23,6 +23,11 @@ import { ProseEditor } from "@/components/editor/prose-editor";
 import { ScreenplayEditor, type CommentData } from "@/components/editor/screenplay-editor";
 import { VersionHistory, type VersionSummary } from "@/components/editor/version-history";
 import { ReadAloud } from "@/components/editor/read-aloud";
+import { SceneNavigator, type OutlineCardInfo } from "@/components/editor/scene-navigator";
+import { addCardsForScenes } from "@/app/actions/scene-sync";
+import { moveScene } from "@/lib/scene-sync";
+import { computeSceneNumbers } from "@/lib/draft-content";
+import { useToast } from "@/components/toast";
 import { Menu, MENU_ITEM } from "@/components/menu";
 
 const AUTOSAVE_DELAY_MS = 1200;
@@ -46,6 +51,7 @@ export function WriteEditor({
   initialRevisionBaseline = null,
   initialRevisionColor = null,
   initialComments = [],
+  outlineCards = [],
 }: {
   projectId: string;
   initialContent: DraftContent;
@@ -57,6 +63,7 @@ export function WriteEditor({
   initialRevisionBaseline?: ScreenplayContent | null;
   initialRevisionColor?: string | null;
   initialComments?: CommentData[];
+  outlineCards?: OutlineCardInfo[];
 }) {
   const [content, setContent] = useState(initialContent);
   const [saveState, setSaveState] = useState<"saved" | "saving" | "pending" | "error" | "conflict">("saved");
@@ -64,6 +71,8 @@ export function WriteEditor({
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [focusMode, setFocusMode] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showScenes, setShowScenes] = useState(false);
+  const toast = useToast();
   const [versions, setVersions] = useState(initialVersions);
   const [sceneNumbersLocked, setSceneNumbersLocked] = useState(initialSceneNumbersLocked);
   const [revisionBaseline, setRevisionBaseline] = useState(initialRevisionBaseline);
@@ -358,6 +367,16 @@ export function WriteEditor({
     });
   }
 
+  function toggleScenes() {
+    setShowScenes((v) => !v);
+    setShowHistory(false);
+  }
+
+  function toggleHistory() {
+    setShowHistory((v) => !v);
+    setShowScenes(false);
+  }
+
   const exportMenuItems = (
     <>
       <label className="block px-3 pb-1 pt-2 text-xs text-neutral-500">
@@ -513,11 +532,12 @@ export function WriteEditor({
                     </button>
                   </>
                 )}
-                <button
-                  type="button"
-                  onClick={() => setShowHistory((v) => !v)}
-                  className={MENU_ITEM}
-                >
+                {content.type === "screenplay" && (
+                  <button type="button" onClick={toggleScenes} className={MENU_ITEM}>
+                    Scenes
+                  </button>
+                )}
+                <button type="button" onClick={toggleHistory} className={MENU_ITEM}>
                   History
                 </button>
               </Menu>
@@ -565,10 +585,12 @@ export function WriteEditor({
                   </button>
                 </>
               )}
-              <button
-                onClick={() => setShowHistory((v) => !v)}
-                className={TOOLBAR_ITEM}
-              >
+              {content.type === "screenplay" && (
+                <button onClick={toggleScenes} className={TOOLBAR_ITEM}>
+                  Scenes
+                </button>
+              )}
+              <button onClick={toggleHistory} className={TOOLBAR_ITEM}>
                 History
               </button>
               <button
@@ -695,6 +717,34 @@ export function WriteEditor({
           )}
         </div>
       </div>
+
+      {showScenes && !focusMode && content.type === "screenplay" && (
+        <SceneNavigator
+          content={content}
+          sceneNumbers={computeSceneNumbers(content.elements, sceneNumbersLocked)}
+          cards={outlineCards}
+          onJump={(id) => {
+            setScrollToSceneId(id);
+            if (window.matchMedia("(max-width: 639px)").matches) setShowScenes(false);
+          }}
+          onMove={(id, delta) =>
+            setContent({
+              type: "screenplay",
+              elements: moveScene(content.elements, id, delta),
+            })
+          }
+          onAddCard={async (id) => {
+            try {
+              await performSave();
+              await addCardsForScenes(projectId, [id]);
+              toast.success("Card added to the Plan board");
+            } catch {
+              toast.error("Couldn't add the card — try again");
+            }
+          }}
+          onClose={() => setShowScenes(false)}
+        />
+      )}
 
       {showHistory && !focusMode && (
         <VersionHistory
