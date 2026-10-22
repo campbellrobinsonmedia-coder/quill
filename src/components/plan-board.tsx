@@ -382,6 +382,29 @@ export function PlanBoard({
             </button>
           ))}
         </Menu>
+        {initialCards.length > 0 && (
+          <Menu
+            label="Print"
+            buttonClassName="inline-flex h-10 items-center rounded-md border border-neutral-300 px-3 text-sm hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+          >
+            <a
+              className={MENU_ITEM}
+              href={`/api/projects/${projectId}/export/outline?kind=cards`}
+              download
+            >
+              Index cards (PDF)
+              <span className="block text-xs text-neutral-500">3×5, four to a sheet, to cut out</span>
+            </a>
+            <a
+              className={MENU_ITEM}
+              href={`/api/projects/${projectId}/export/outline?kind=outline`}
+              download
+            >
+              Outline (PDF)
+              <span className="block text-xs text-neutral-500">Every scene on one page</span>
+            </a>
+          </Menu>
+        )}
       </div>
 
       {progress && <ProgressPanel progress={progress} />}

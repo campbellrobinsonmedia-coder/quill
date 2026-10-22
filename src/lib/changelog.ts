@@ -290,6 +290,14 @@ export const CHANGELOG: ChangelogRelease[] = [
       "\"Update from scene\" on a card fills its location and characters from the script (who speaks in the scene); nothing changes until you save the card",
     ],
   },
+  {
+    version: "v28",
+    title: "Print your outline",
+    items: [
+      "Plan > Print > Index cards: your scene cards as real 3×5 cards, four to a landscape sheet with cut guides, in story order — number, scene heading, title, what happens, the turn and who's in it, with the card's colour down the edge",
+      "Plan > Print > Outline: the whole story as a one-page outline under its beats, shrinking the type to fit a page where it can (a long outline flows onto more pages)",
+    ],
+  },
 ];
 
 // Not built yet — discussed and agreed as direction, not a fixed commitment.
