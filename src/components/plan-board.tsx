@@ -27,8 +27,20 @@ import { BeatColumn, UnplannedColumn, type PlanBeat } from "@/components/beat-co
 import { Menu, MENU_ITEM } from "@/components/menu";
 import { useToast } from "@/components/toast";
 import { useMediaQuery } from "@/lib/use-media-query";
+import { usePersistedChoice } from "@/lib/use-persisted-choice";
+import {
+  decodeFilter,
+  encodeFilter,
+  filterOptions,
+  matchesFilter,
+  type CardFilter,
+} from "@/lib/card-filter";
+import { beatSpans } from "@/lib/plan-lanes";
+import { WallView, WALL_SIZES, type WallSize } from "@/components/plan/wall-view";
+import { LanesView, type LaneMode } from "@/components/plan/lanes-view";
+import { OutlineView } from "@/components/plan/outline-view";
 import { createProjectBeat, applyBeatTemplate, reorderBeats } from "@/app/actions/beats";
-import { saveOutlineLayout } from "@/app/actions/outline";
+import { createCard, saveOutlineLayout } from "@/app/actions/outline";
 import {
   addCardsForScenes,
   reorderOutlineToScript,
@@ -40,11 +52,27 @@ import {
   buildLayout,
   cardNumbers,
   columnOf,
+  flattenLayout,
   moveBeat,
   moveCard,
+  moveCardOnto,
   serializeLayout,
   type PlanLayout,
 } from "@/lib/plan-layout";
+
+const VIEWS = ["board", "wall", "lanes", "outline"] as const;
+type PlanView = (typeof VIEWS)[number];
+const VIEW_LABELS: Record<PlanView, string> = {
+  board: "Board",
+  wall: "Wall",
+  lanes: "Lanes",
+  outline: "Outline",
+};
+const LANE_MODES = ["thread", "character"] as const;
+const SEGMENTS =
+  "inline-flex divide-x divide-neutral-300 rounded-md border border-neutral-300 dark:divide-neutral-700 dark:border-neutral-700";
+const SEGMENT =
+  "px-3 py-1.5 text-sm first:rounded-l-md last:rounded-r-md aria-pressed:bg-neutral-900 aria-pressed:text-white dark:aria-pressed:bg-white dark:aria-pressed:text-neutral-900";
 
 type OverviewBeat = { id: string; title: string; summary: string | null };
 
@@ -124,6 +152,27 @@ export function PlanBoard({
   const [newBeat, setNewBeat] = useState("");
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
   const [openCardId, setOpenCardId] = useState<string | null>(null);
+
+  const [view, setView] = usePersistedChoice<PlanView>(
+    `quill:plan-view:${projectId}`,
+    VIEWS,
+    "board"
+  );
+  const [wallSize, setWallSize] = usePersistedChoice<WallSize>(
+    `quill:plan-wall-size:${projectId}`,
+    WALL_SIZES.map((s) => s.id),
+    "m"
+  );
+  const [laneMode, setLaneMode] = usePersistedChoice<LaneMode>(
+    `quill:plan-lanes:${projectId}`,
+    LANE_MODES,
+    "thread"
+  );
+  const [filter, setFilter] = useState<CardFilter | null>(null);
+  const options = filterOptions(initialCards);
+  const hasOptions =
+    options.characters.length > 0 || options.threads.length > 0 || options.locations.length > 0;
+  const matches = (card: OutlineCardData) => matchesFilter(card, filter);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -214,6 +263,24 @@ export function PlanBoard({
     });
   }
 
+  function addCard(title: string) {
+    startTransition(async () => {
+      try {
+        await createCard(projectId, title);
+      } catch {
+        toast.error("Couldn't add that card — try again");
+      }
+    });
+  }
+
+  function moveOnWall(activeId: string, overId: string) {
+    const previous = layoutRef.current;
+    const next = moveCardOnto(previous, activeId, overId);
+    if (JSON.stringify(next) === JSON.stringify(previous)) return;
+    setLayout(next);
+    persist(next, previous);
+  }
+
   function addTemplate(templateId: string) {
     startTransition(async () => {
       try {
@@ -229,6 +296,34 @@ export function PlanBoard({
   const unplannedCount = layout.columns[UNPLANNED].length;
   const activeCard = activeCardId ? cardsById.get(activeCardId) : null;
   const openCard = openCardId ? cardsById.get(openCardId) : null;
+  const orderedIds = flattenLayout(layout);
+  const orderedCards = orderedIds.flatMap((id) => cardsById.get(id) ?? []);
+  const sceneLabelOf = (card: OutlineCardData) =>
+    card.linkedSceneId ? sync?.sceneLabels[card.linkedSceneId] : undefined;
+  const isOrphaned = (id: string) => sync?.orphanedCardIds.includes(id) ?? false;
+  const beatTitleOf = (id: string) => {
+    if (!hasBeats) return undefined;
+    const col = columnOf(layout, id);
+    return !col || col === UNPLANNED ? "Unplanned" : beatsById.get(col)?.title;
+  };
+  const outlineGroups = [
+    ...(unplannedCount > 0 || !hasBeats
+      ? [
+          {
+            key: UNPLANNED,
+            label: hasBeats ? "Unplanned" : "Scenes",
+            summary: null,
+            ids: layout.columns[UNPLANNED],
+          },
+        ]
+      : []),
+    ...layout.beatIds.map((id) => ({
+      key: id,
+      label: beatsById.get(id)?.title ?? "Beat",
+      summary: beatsById.get(id)?.summary ?? null,
+      ids: layout.columns[id] ?? [],
+    })),
+  ];
 
   function renderCard(id: string) {
     const card = cardsById.get(id);
@@ -239,9 +334,10 @@ export function PlanBoard({
         card={card}
         number={numbers.get(id) ?? 0}
         projectId={projectId}
-        sceneLabel={card.linkedSceneId ? sync?.sceneLabels[card.linkedSceneId] : undefined}
-        sceneMissing={sync?.orphanedCardIds.includes(id) ?? false}
+        sceneLabel={sceneLabelOf(card)}
+        sceneMissing={isOrphaned(id)}
         active={openCardId === id}
+        dimmed={!matches(card)}
         onOpen={() => setOpenCardId(id)}
       />
     );
@@ -279,6 +375,109 @@ export function PlanBoard({
         </Menu>
       </div>
 
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div role="group" aria-label="View" className={SEGMENTS}>
+          {VIEWS.map((v) => (
+            <button
+              key={v}
+              type="button"
+              aria-pressed={view === v}
+              onClick={() => setView(v)}
+              className={SEGMENT}
+            >
+              {VIEW_LABELS[v]}
+            </button>
+          ))}
+        </div>
+        {view === "wall" && (
+          <div role="group" aria-label="Card size" className={SEGMENTS}>
+            {WALL_SIZES.map((sz) => (
+              <button
+                key={sz.id}
+                type="button"
+                aria-pressed={wallSize === sz.id}
+                aria-label={`Card size ${sz.label}`}
+                onClick={() => setWallSize(sz.id)}
+                className={SEGMENT}
+              >
+                {sz.label}
+              </button>
+            ))}
+          </div>
+        )}
+        {view === "lanes" && (
+          <div role="group" aria-label="Rows" className={SEGMENTS}>
+            <button
+              type="button"
+              aria-pressed={laneMode === "thread"}
+              onClick={() => setLaneMode("thread")}
+              className={SEGMENT}
+            >
+              Storylines
+            </button>
+            <button
+              type="button"
+              aria-pressed={laneMode === "character"}
+              onClick={() => setLaneMode("character")}
+              className={SEGMENT}
+            >
+              Characters
+            </button>
+          </div>
+        )}
+        {hasOptions && (
+          <div className="flex items-center gap-2">
+            <label htmlFor="plan-highlight" className="text-xs text-neutral-500">
+              Highlight
+            </label>
+            <select
+              id="plan-highlight"
+              value={encodeFilter(filter)}
+              onChange={(e) => setFilter(decodeFilter(e.target.value))}
+              className="max-w-48 rounded-md border border-neutral-300 bg-transparent px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+            >
+              <option value="">Nothing</option>
+              {options.characters.length > 0 && (
+                <optgroup label="Character">
+                  {options.characters.map((c) => (
+                    <option key={c.id} value={encodeFilter({ kind: "character", value: c.id })}>
+                      {c.name}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {options.threads.length > 0 && (
+                <optgroup label="Storyline">
+                  {options.threads.map((t) => (
+                    <option key={t} value={encodeFilter({ kind: "thread", value: t })}>
+                      {t}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {options.locations.length > 0 && (
+                <optgroup label="Location">
+                  {options.locations.map((l) => (
+                    <option key={l} value={encodeFilter({ kind: "location", value: l })}>
+                      {l}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+            {filter && (
+              <button
+                type="button"
+                onClick={() => setFilter(null)}
+                className="text-xs text-neutral-500 underline underline-offset-2"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
       {sync && (sync.unlinkedScenes > 0 || sync.scriptOutOfOrder) && (
         <ScriptSyncBar projectId={projectId} sync={sync} />
       )}
@@ -312,6 +511,51 @@ export function PlanBoard({
         />
       )}
 
+      {view === "wall" && (
+        <WallView
+          projectId={projectId}
+          orderedIds={orderedIds}
+          cardsById={cardsById}
+          beatTitleOf={beatTitleOf}
+          numbers={numbers}
+          sceneLabelOf={sceneLabelOf}
+          isOrphaned={isOrphaned}
+          matches={matches}
+          openCardId={openCardId}
+          size={wallSize}
+          onOpen={setOpenCardId}
+          onMove={moveOnWall}
+          onAdd={addCard}
+        />
+      )}
+
+      {view === "lanes" && (
+        <LanesView
+          ordered={orderedCards}
+          numbers={numbers}
+          spans={beatSpans(layout, (id) => beatsById.get(id)?.title ?? "Beat")}
+          mode={laneMode}
+          matches={matches}
+          openCardId={openCardId}
+          onOpen={setOpenCardId}
+        />
+      )}
+
+      {view === "outline" && (
+        <OutlineView
+          groups={outlineGroups}
+          cardsById={cardsById}
+          numbers={numbers}
+          sceneLabelOf={sceneLabelOf}
+          isOrphaned={isOrphaned}
+          matches={matches}
+          openCardId={openCardId}
+          onOpen={setOpenCardId}
+          onAdd={addCard}
+        />
+      )}
+
+      {view === "board" && (
       <DndContext
         id={`plan-board-${projectId}`}
         sensors={sensors}
@@ -378,6 +622,7 @@ export function PlanBoard({
           ) : null}
         </DragOverlay>
       </DndContext>
+      )}
     </div>
   );
 }

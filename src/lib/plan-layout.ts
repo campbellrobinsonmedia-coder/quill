@@ -82,3 +82,13 @@ export function serializeLayout(layout: PlanLayout) {
     })),
   };
 }
+
+// Dropping a card onto another card on the Wall: it takes that card's place in
+// that card's column (so it joins that beat if it's a different one), the same
+// way a drag between columns does on the Board.
+export function moveCardOnto(layout: PlanLayout, cardId: string, targetCardId: string): PlanLayout {
+  if (cardId === targetCardId) return layout;
+  const column = columnOf(layout, targetCardId);
+  if (column === null) return layout;
+  return moveCard(layout, cardId, column, layout.columns[column].indexOf(targetCardId));
+}

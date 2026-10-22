@@ -259,6 +259,17 @@ export const CHANGELOG: ChangelogRelease[] = [
       "Backup and restore, and search, include the new field",
     ],
   },
+  {
+    version: "v25",
+    title: "Four ways to see your scenes",
+    items: [
+      "The Plan page has a view switcher — Board, Wall, Lanes and Outline — all showing the same cards; the one you choose is remembered for each script",
+      "Wall: every scene in story order as a corkboard you can drag to reorder (dropping on a card also moves it into that card's beat), with small, medium and large cards",
+      "Lanes: scenes across the page with a row per storyline or per character, under a beat header strip, so you can see where a thread or character goes quiet; click any cell to open the card",
+      "Outline: the story as numbered text under each beat, with title, what happens and the turn editable in place",
+      "Highlight a character, storyline or location in any view and every other card fades back",
+    ],
+  },
 ];
 
 // Not built yet — discussed and agreed as direction, not a fixed commitment.

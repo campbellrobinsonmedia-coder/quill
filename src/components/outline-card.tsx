@@ -31,6 +31,8 @@ export function OutlineCard({
   sceneLabel,
   sceneMissing = false,
   active = false,
+  dimmed = false,
+  beatTitle,
   onOpen,
 }: {
   card: OutlineCardData;
@@ -41,6 +43,10 @@ export function OutlineCard({
   /** The linked scene no longer exists in the script. */
   sceneMissing?: boolean;
   active?: boolean;
+  /** Another card is being highlighted; fade this one. */
+  dimmed?: boolean;
+  /** Shown on the face when cards from different beats sit together (the Wall). */
+  beatTitle?: string;
   onOpen: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -49,7 +55,7 @@ export function OutlineCard({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.5 : dimmed ? 0.3 : 1,
   };
 
   const heading = cardHeading({ sceneLabel: sceneMissing ? null : sceneLabel, location: card.location });
@@ -105,6 +111,11 @@ export function OutlineCard({
         )}
       </div>
 
+      {beatTitle && (
+        <p className="truncate text-[10px] font-medium uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
+          {beatTitle}
+        </p>
+      )}
       <p className="text-sm font-medium leading-snug">{card.title}</p>
 
       {card.summary && (
