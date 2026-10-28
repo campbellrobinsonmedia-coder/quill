@@ -61,6 +61,15 @@ export default async function SeriesOverviewPage({
 
   return (
     <div className="flex flex-1 flex-col gap-8 p-4 sm:p-6">
+      <div className="-mb-4 flex justify-end text-xs">
+        <a
+          href={`/api/series/${id}/export/bible`}
+          className="text-neutral-500 underline underline-offset-2 hover:text-neutral-900 dark:hover:text-neutral-100"
+        >
+          Export series bible (PDF)
+        </a>
+      </div>
+
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-neutral-500">Series arc</h2>
         <p className="text-xs text-neutral-500 dark:text-neutral-400">

@@ -315,6 +315,13 @@ export const CHANGELOG: ChangelogRelease[] = [
       "Both views flag what's slipping: a storyline or character missing from two or more episodes in a row, one that isn't seen again for the rest of the season, or one that only ever appears once",
     ],
   },
+  {
+    version: "v31",
+    title: "Series bible",
+    items: [
+      "Export series bible (PDF) on the series overview: premise, series arc, recurring characters with their arcs and relationships, world notes by category, and every season's arc and episode loglines in one printable document",
+    ],
+  },
 ];
 
 // Not built yet — discussed and agreed as direction, not a fixed commitment.
