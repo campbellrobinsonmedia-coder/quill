@@ -13,7 +13,16 @@ export type BeatData = {
   summary: string | null;
   projectId: string | null;
   references?: ReferenceData[];
+  /** Season arc beats: how far the assigned episode has got. */
+  coverage?: { label: string; tone: "muted" | "amber" | "blue" | "emerald" };
 };
+
+const COVERAGE_TONE = {
+  muted: "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400",
+  amber: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
+  blue: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300",
+  emerald: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
+} as const;
 
 export function BeatCard({
   beat,
@@ -98,6 +107,13 @@ export function BeatCard({
             <p className="whitespace-pre-wrap text-xs text-neutral-500 line-clamp-4">
               {beat.summary}
             </p>
+          )}
+          {beat.coverage && (
+            <span
+              className={`w-fit rounded px-1.5 py-0.5 text-[10px] font-medium ${COVERAGE_TONE[beat.coverage.tone]}`}
+            >
+              {beat.coverage.label}
+            </span>
           )}
           <ReferenceList
             scope={{ beatId: beat.id }}

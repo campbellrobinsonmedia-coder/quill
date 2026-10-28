@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { normalizeOutlineOrder } from "@/lib/outline-order";
-import { BEAT_TEMPLATES } from "@/lib/beat-templates";
+import { BEAT_TEMPLATES, SEASON_BEAT_TEMPLATES } from "@/lib/beat-templates";
 
 async function assertOwnsSeries(userId: string, seriesId: string) {
   const series = await prisma.series.findFirst({
@@ -266,4 +266,25 @@ export async function applyBeatTemplate(projectId: string, templateId: string) {
 
   await normalizeOutlineOrder(projectId);
   revalidatePath(`/projects/${projectId}`);
+}
+
+// Adds a ready-made season arc to the end of a season's beats.
+export async function applySeasonBeatTemplate(seasonId: string, templateId: string) {
+  const userId = await requireUserId();
+  const season = await assertOwnsSeason(userId, seasonId);
+
+  const template = SEASON_BEAT_TEMPLATES.find((t) => t.id === templateId);
+  if (!template) throw new Error("Unknown template");
+
+  const start = await nextOrder({ seasonId });
+  await prisma.beat.createMany({
+    data: template.beats.map((b, i) => ({
+      seasonId,
+      title: b.title,
+      summary: b.summary,
+      order: start + i,
+    })),
+  });
+
+  revalidatePath(`/series/${season.seriesId}/seasons/${seasonId}`);
 }

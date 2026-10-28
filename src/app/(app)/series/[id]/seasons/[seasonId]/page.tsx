@@ -9,6 +9,17 @@ import { BeatBoard } from "@/components/beat-board";
 import { ReferenceList } from "@/components/reference-list";
 import { deleteIdea } from "@/app/actions/ideas";
 import { DeleteButton } from "@/components/delete-button";
+import { SeasonTemplateMenu } from "@/components/season/season-template-menu";
+import { StatusBar, STATUS_COLORS } from "@/components/plan/status-bar";
+import { STATUS_LABELS } from "@/lib/plan-progress";
+import type { DraftContent } from "@/lib/draft-content";
+import {
+  arcCoverage,
+  arcGaps,
+  episodeRollup,
+  seasonTotals,
+  type EpisodeRollup,
+} from "@/lib/season-rollup";
 
 type EpisodeStatus = "Idea" | "Outlined" | "Drafted" | "Locked";
 
@@ -53,7 +64,8 @@ export default async function SeasonBoardPage({
       orderBy: { episodeNumber: "asc" },
       include: {
         _count: { select: { outlineCards: true } },
-        draft: { select: { wordCount: true, sceneNumbersLocked: true } },
+        outlineCards: { select: { id: true, status: true, linkedSceneId: true, beatId: true } },
+        draft: { select: { wordCount: true, sceneNumbersLocked: true, content: true } },
       },
     }),
     prisma.idea.findMany({
@@ -89,6 +101,21 @@ export default async function SeasonBoardPage({
     episodeNumber: ep.episodeNumber,
   }));
 
+  const rollups = new Map<string, EpisodeRollup>(
+    episodes.map((ep) => [
+      ep.id,
+      episodeRollup({
+        formatTemplate: ep.formatTemplate,
+        pageTarget: ep.pageTarget,
+        cards: ep.outlineCards,
+        draftContent: ep.draft ? (ep.draft.content as unknown as DraftContent) : null,
+      }),
+    ])
+  );
+  const totals = seasonTotals(Array.from(rollups.values()));
+  const gaps = arcGaps(beats, episodes);
+  const beatsWithCoverage = beats.map((b) => ({ ...b, coverage: arcCoverage(b, rollups) }));
+
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
       <div className="flex items-center gap-2 text-sm">
@@ -122,15 +149,66 @@ export default async function SeasonBoardPage({
         </div>
       </div>
 
+      {totals.scenes > 0 && (
+        <section
+          aria-label="Season progress"
+          className="space-y-2 rounded-md border border-neutral-200 p-3 text-sm dark:border-neutral-800"
+        >
+          <p>
+            <span className="font-medium tabular-nums">{totals.written}</span>
+            <span className="text-neutral-500">
+              {" "}
+              of {totals.scenes} scenes written across {totals.episodes} episode
+              {totals.episodes === 1 ? "" : "s"}
+              {totals.started > 0 && ` · ${totals.started} started`}
+              {totals.target > 0 &&
+                ` · ${totals.pages} of ${totals.target} pages`}
+            </span>
+          </p>
+          <StatusBar
+            counts={{ written: totals.written, started: totals.started, idea: totals.idea }}
+            total={totals.scenes}
+          />
+          <p className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-neutral-500">
+            {(["written", "started", "idea"] as const).map((s) => (
+              <span key={s} className="inline-flex items-center gap-1">
+                <span className={`h-2 w-2 rounded-full ${STATUS_COLORS[s]}`} />
+                {STATUS_LABELS[s]}
+              </span>
+            ))}
+          </p>
+        </section>
+      )}
+
       <section className="space-y-3 border-b border-neutral-200 pb-6 dark:border-neutral-800">
-        <h3 className="text-sm font-medium text-neutral-500">Season arc</h3>
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-medium text-neutral-500">Season arc</h3>
+          <SeasonTemplateMenu seasonId={seasonId} />
+        </div>
         <BeatBoard
           scope={{ seasonId }}
-          initialBeats={beats}
+          initialBeats={beatsWithCoverage}
           episodeOptions={episodeOptions}
           placeholder="New season beat (e.g. Midpoint reveal)…"
-          emptyMessage="No season-level beats yet — sketch the season's shape here before breaking it into episodes."
+          emptyMessage="No season-level beats yet — sketch the season's shape here before breaking it into episodes, or start from an arc template."
         />
+        {(gaps.unassigned.length > 0 || gaps.episodesWithoutBeats.length > 0) && (
+          <ul className="space-y-1 text-xs text-amber-800 dark:text-amber-300">
+            {gaps.unassigned.length > 0 && (
+              <li>
+                {gaps.unassigned.length} arc beat{gaps.unassigned.length === 1 ? " isn't" : "s aren't"} assigned to an
+                episode yet: {gaps.unassigned.slice(0, 4).join(", ")}
+                {gaps.unassigned.length > 4 ? ` and ${gaps.unassigned.length - 4} more` : ""}.
+              </li>
+            )}
+            {gaps.episodesWithoutBeats.length > 0 && (
+              <li>
+                No arc beat is assigned to episode{gaps.episodesWithoutBeats.length === 1 ? "" : "s"}{" "}
+                {gaps.episodesWithoutBeats.join(", ")}.
+              </li>
+            )}
+          </ul>
+        )}
       </section>
 
       <section className="space-y-3 border-b border-neutral-200 pb-6 dark:border-neutral-800">
@@ -148,6 +226,7 @@ export default async function SeasonBoardPage({
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {episodes.map((ep) => {
             const status = deriveStatus(ep);
+            const roll = rollups.get(ep.id)!;
             return (
               <Link
                 key={ep.id}
@@ -173,6 +252,16 @@ export default async function SeasonBoardPage({
                 </p>
                 {ep.logline && (
                   <p className="line-clamp-2 text-sm text-neutral-500">{ep.logline}</p>
+                )}
+                {roll.total > 0 && (
+                  <div className="mt-1 space-y-1">
+                    <StatusBar counts={roll.counts} total={roll.total} />
+                    <p className="text-xs tabular-nums text-neutral-500 dark:text-neutral-400">
+                      {roll.counts.written}/{roll.total} scenes written
+                      {roll.scriptPages !== null &&
+                        ` · ${roll.scriptPages}${roll.target ? ` of ${roll.target}` : ""} pp`}
+                    </p>
+                  </div>
                 )}
                 <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
                   {templateLabel(ep.formatTemplate)}

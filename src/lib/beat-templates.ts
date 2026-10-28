@@ -72,3 +72,44 @@ export const BEAT_TEMPLATES: BeatTemplate[] = [
     ],
   },
 ];
+
+// Shapes for a whole season's arc, to be spread across its episodes.
+export const SEASON_BEAT_TEMPLATES: BeatTemplate[] = [
+  {
+    id: "season-four-part",
+    label: "Four-part season",
+    beats: [
+      { title: "Premiere: the world and the hook", summary: "Introduce the world, the cast and the question that will run all season." },
+      { title: "First turn", summary: "The central situation locks in; the cast can't go back to how things were." },
+      { title: "Midseason turn", summary: "A reveal or reversal that changes what the season is really about." },
+      { title: "The collapse", summary: "Everything the characters built is tested; the cost becomes clear." },
+      { title: "Finale", summary: "The season's question is answered, and the characters are changed by it." },
+    ],
+  },
+  {
+    id: "season-mystery",
+    label: "Mystery season",
+    beats: [
+      { title: "The question", summary: "The event or secret the whole season will try to explain." },
+      { title: "First clue", summary: "The first real lead, and who it points at." },
+      { title: "False answer", summary: "An explanation that feels right and isn't." },
+      { title: "Midseason twist", summary: "What we thought we knew turns over." },
+      { title: "The cost of knowing", summary: "Pursuing the truth hurts someone close." },
+      { title: "The truth", summary: "The real answer, and who it implicates." },
+      { title: "Fallout and a new question", summary: "The aftermath, and the door the next season opens." },
+    ],
+  },
+  {
+    id: "season-ensemble",
+    label: "Ensemble season (character arcs)",
+    beats: [
+      { title: "Where everyone starts", summary: "Each lead's want and flaw, established in the first episodes." },
+      { title: "The shared pressure", summary: "An event that forces the ensemble into the same problem." },
+      { title: "Alliances and fractures", summary: "Who pairs up, who splits, and why." },
+      { title: "Midseason: the first big loss", summary: "A setback that lands differently on each character." },
+      { title: "Each lead's low point", summary: "The place each arc bottoms out." },
+      { title: "The choice", summary: "Each character decides who they'll be." },
+      { title: "Finale and the new normal", summary: "The ensemble as the season has remade it." },
+    ],
+  },
+];

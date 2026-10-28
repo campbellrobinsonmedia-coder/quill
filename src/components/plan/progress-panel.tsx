@@ -1,24 +1,7 @@
 "use client";
 
+import { StatusBar, STATUS_COLORS } from "@/components/plan/status-bar";
 import { STATUS_LABELS, type PlanProgress } from "@/lib/plan-progress";
-
-const SEGMENT_COLORS = {
-  written: "bg-emerald-500 dark:bg-emerald-400",
-  started: "bg-amber-400 dark:bg-amber-500",
-  idea: "bg-neutral-200 dark:bg-neutral-700",
-} as const;
-
-function StatusBar({ counts, total }: { counts: PlanProgress["counts"]; total: number }) {
-  return (
-    <div className="flex h-2 w-full overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
-      {(["written", "started", "idea"] as const).map((s) =>
-        counts[s] > 0 ? (
-          <div key={s} className={SEGMENT_COLORS[s]} style={{ width: `${(counts[s] / total) * 100}%` }} />
-        ) : null
-      )}
-    </div>
-  );
-}
 
 // Where the script stands against the plan: scenes written, pages against the
 // goal, and how the work is spread across the story's beats.
@@ -106,7 +89,7 @@ export function ProgressPanel({ progress }: { progress: PlanProgress }) {
       <p className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-neutral-500">
         {(["written", "started", "idea"] as const).map((s) => (
           <span key={s} className="inline-flex items-center gap-1">
-            <span className={`h-2 w-2 rounded-full ${SEGMENT_COLORS[s]}`} />
+            <span className={`h-2 w-2 rounded-full ${STATUS_COLORS[s]}`} />
             {STATUS_LABELS[s]}
           </span>
         ))}

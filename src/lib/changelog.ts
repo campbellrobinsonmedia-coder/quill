@@ -298,6 +298,15 @@ export const CHANGELOG: ChangelogRelease[] = [
       "Plan > Print > Outline: the whole story as a one-page outline under its beats, shrinking the type to fit a page where it can (a long outline flows onto more pages)",
     ],
   },
+  {
+    version: "v29",
+    title: "Season progress and arc coverage",
+    items: [
+      "The season page shows how much of the season is written: scenes written out of scenes planned across all episodes, pages against the episodes' targets, and a bar on each episode card",
+      "Each season arc beat shows how far its assigned episode has got (not planned yet, planned, in progress, written), and a note lists arc beats no episode owns and episodes with no part of the arc",
+      "Arc templates for a whole season: a four-part season, a mystery season, and an ensemble season of character arcs",
+    ],
+  },
 ];
 
 // Not built yet — discussed and agreed as direction, not a fixed commitment.
