@@ -138,7 +138,7 @@ export default async function SeasonBoardPage({
             href={`/series/${id}/seasons/${seasonId}/threads`}
             className="text-neutral-500 underline underline-offset-2 hover:text-neutral-900 dark:hover:text-neutral-100"
           >
-            Thread matrix
+            Storylines &amp; characters
           </Link>
           <a
             href={`/api/series/${id}/seasons/${seasonId}/export/pitch`}

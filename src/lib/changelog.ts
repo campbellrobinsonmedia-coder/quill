@@ -307,6 +307,14 @@ export const CHANGELOG: ChangelogRelease[] = [
       "Arc templates for a whole season: a four-part season, a mystery season, and an ensemble season of character arcs",
     ],
   },
+  {
+    version: "v30",
+    title: "Characters across a season",
+    items: [
+      "The season matrix now has a Characters view next to Storylines: who is on the scene cards of each episode, busiest characters first",
+      "Both views flag what's slipping: a storyline or character missing from two or more episodes in a row, one that isn't seen again for the rest of the season, or one that only ever appears once",
+    ],
+  },
 ];
 
 // Not built yet — discussed and agreed as direction, not a fixed commitment.
