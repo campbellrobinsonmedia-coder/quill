@@ -8,6 +8,7 @@ import {
   type DraftContent,
 } from "@/lib/draft-content";
 import { buildProgress, pageTargetFor } from "@/lib/plan-progress";
+import { episodeTargets } from "@/lib/card-move";
 import { findOrphanedCards, findUnlinkedScenes, isScriptInOrder } from "@/lib/scene-sync";
 import type { Metadata } from "next";
 
@@ -97,6 +98,23 @@ export default async function OutlinePage({
       : Promise.resolve([]),
   ]);
 
+  // Other episodes of the same series, for moving a card between them.
+  const targets = season
+    ? episodeTargets(
+        await prisma.project.findMany({
+          where: { userId: project.userId, status: "ACTIVE", season: { seriesId: season.seriesId } },
+          select: {
+            id: true,
+            episodeNumber: true,
+            episodeTitle: true,
+            title: true,
+            season: { select: { number: true } },
+          },
+        }),
+        id
+      )
+    : [];
+
   const availableScenes = draft
     ? listScenes(draft.content as unknown as DraftContent)
     : [];
@@ -136,6 +154,7 @@ export default async function OutlinePage({
       availableCharacters={characters}
       availableScenes={availableScenes}
       seasonBeats={seasonBeats}
+      episodeTargets={targets}
       sync={sync}
       progress={progress}
       initialOpenCardId={cards.some((c) => c.id === openCard) ? openCard : null}

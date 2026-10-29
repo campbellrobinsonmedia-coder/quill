@@ -3,12 +3,13 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { deleteCard, updateCard } from "@/app/actions/outline";
+import { deleteCard, moveCardToEpisode, updateCard } from "@/app/actions/outline";
 import { sceneFactsForCard, startSceneFromCard } from "@/app/actions/scene-sync";
 import { useToast } from "@/components/toast";
 import { OUTLINE_COLORS } from "@/lib/outline-colors";
 import { sceneHeadingFromLabel } from "@/lib/card-face";
 import type { OutlineCardData } from "@/components/outline-card";
+import type { EpisodeTarget } from "@/lib/card-move";
 import { CARD_STATUSES, STATUS_LABELS, isCardStatus, type CardStat } from "@/lib/plan-progress";
 
 const FIELD =
@@ -24,6 +25,7 @@ export function CardEditor({
   availableCharacters,
   availableScenes,
   beatOptions,
+  episodeTargets,
   sceneMissing,
   stat,
   onClose,
@@ -36,6 +38,8 @@ export function CardEditor({
   availableCharacters: { id: string; name: string }[];
   availableScenes: { id: string; label: string }[];
   beatOptions: { id: string; title: string }[];
+  /** Other episodes in the series; empty for a standalone project. */
+  episodeTargets: EpisodeTarget[];
   sceneMissing: boolean;
   /** Progress read from the script. */
   stat?: CardStat;
@@ -57,6 +61,7 @@ export function CardEditor({
   const [linkedSceneId, setLinkedSceneId] = useState(card.linkedSceneId ?? "");
   const [beatId, setBeatId] = useState(card.beatId ?? "");
   const [status, setStatus] = useState(isCardStatus(card.status) ? card.status : "idea");
+  const [moveTo, setMoveTo] = useState("");
   const [colorTag, setColorTag] = useState(card.colorTag ?? "neutral");
   const [characterIds, setCharacterIds] = useState(new Set(card.characters.map((c) => c.id)));
 
@@ -152,6 +157,30 @@ export function CardEditor({
         onClose();
       } catch {
         toast.error("Couldn't delete — try again");
+      }
+    });
+  }
+
+  // Moves the card (with what's in the panel) to another episode.
+  function move() {
+    const target = episodeTargets.find((t) => t.id === moveTo);
+    if (!target) return;
+    const sceneNote = card.linkedSceneId
+      ? " Its scene text stays in this episode's script; the card is unlinked from it."
+      : "";
+    if (!window.confirm(`Move this card to ${target.label}?${sceneNote}`)) return;
+    startTransition(async () => {
+      try {
+        await updateCard(card.id, fields());
+        const { droppedCharacters } = await moveCardToEpisode(card.id, target.id);
+        toast.success(
+          droppedCharacters.length > 0
+            ? `Moved to ${target.label}. Not carried over (no match there): ${droppedCharacters.join(", ")}`
+            : `Moved to ${target.label}`
+        );
+        onClose();
+      } catch {
+        toast.error("Couldn't move the card — try again");
       }
     });
   }
@@ -425,6 +454,37 @@ export function CardEditor({
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {episodeTargets.length > 0 && (
+          <div>
+            <label htmlFor="card-move" className={LABEL}>
+              Move to another episode
+            </label>
+            <div className="flex gap-2">
+              <select
+                id="card-move"
+                value={moveTo}
+                onChange={(e) => setMoveTo(e.target.value)}
+                className={FIELD}
+              >
+                <option value="">Choose an episode…</option>
+                {episodeTargets.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={move}
+                disabled={isPending || !moveTo}
+                className="shrink-0 rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50 disabled:opacity-60 dark:border-neutral-700 dark:hover:bg-neutral-900"
+              >
+                Move
+              </button>
+            </div>
           </div>
         )}
 

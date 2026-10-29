@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { normalizeOutlineOrder } from "@/lib/outline-order";
 import { isCardStatus } from "@/lib/plan-progress";
+import { carryOverCharacters } from "@/lib/card-move";
 import type { Prisma } from "@/generated/prisma/client";
 
 async function assertOwnsProject(userId: string, projectId: string) {
@@ -119,6 +120,60 @@ export async function deleteCard(cardId: string) {
   await prisma.outlineCard.delete({ where: { id: cardId } });
   await normalizeOutlineOrder(card.project.id);
   revalidatePath(`/projects/${card.project.id}`);
+}
+
+// Moves a scene card to another episode of the same series. It lands at the end
+// of the target's unplanned column. Its beat belongs to the old episode and its
+// scene text stays in the old script, so both links are cleared; series
+// characters come along and episode characters are matched by name.
+export async function moveCardToEpisode(cardId: string, targetProjectId: string) {
+  const userId = await requireUserId();
+  const card = await prisma.outlineCard.findFirst({
+    where: { id: cardId, project: { userId } },
+    include: {
+      characters: { select: { id: true, name: true, seriesId: true } },
+      project: { select: { id: true, season: { select: { id: true, seriesId: true } } } },
+    },
+  });
+  if (!card) throw new Error("Not found");
+  const seriesId = card.project.season?.seriesId;
+  if (!seriesId) throw new Error("Only an episode's cards can be moved");
+  if (targetProjectId === card.projectId) throw new Error("That card is already in this episode");
+
+  const target = await prisma.project.findFirst({
+    where: { id: targetProjectId, userId, status: "ACTIVE", season: { seriesId } },
+    select: { id: true, seasonId: true },
+  });
+  if (!target) throw new Error("Episode not found in this series");
+
+  const [targetCharacters, last] = await Promise.all([
+    prisma.character.findMany({ where: { projectId: target.id }, select: { id: true, name: true } }),
+    prisma.outlineCard.findFirst({
+      where: { projectId: target.id },
+      orderBy: { order: "desc" },
+      select: { order: true },
+    }),
+  ]);
+  const { keep, dropped } = carryOverCharacters(card.characters, targetCharacters);
+
+  await prisma.outlineCard.update({
+    where: { id: cardId },
+    data: {
+      projectId: target.id,
+      beatId: null,
+      linkedSceneId: null,
+      order: (last?.order ?? -1) + 1,
+      characters: { set: keep.map((id) => ({ id })) },
+    },
+  });
+  await Promise.all([normalizeOutlineOrder(card.projectId), normalizeOutlineOrder(target.id)]);
+
+  revalidatePath(`/projects/${card.projectId}`);
+  revalidatePath(`/projects/${target.id}`);
+  for (const season of [card.project.season?.id, target.seasonId]) {
+    if (season) revalidatePath(`/series/${seriesId}/seasons/${season}`);
+  }
+  return { droppedCharacters: dropped, hadScene: card.linkedSceneId !== null };
 }
 
 // Persists the whole Plan board in one go: beat order, which beat each scene

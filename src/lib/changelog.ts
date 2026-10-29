@@ -322,6 +322,14 @@ export const CHANGELOG: ChangelogRelease[] = [
       "Export series bible (PDF) on the series overview: premise, series arc, recurring characters with their arcs and relationships, world notes by category, and every season's arc and episode loglines in one printable document",
     ],
   },
+  {
+    version: "v32",
+    title: "Season print and moving cards",
+    items: [
+      "Print the whole season from the season page: index cards for every episode (a fresh sheet per episode, numbered like 2.5 for episode 2, scene 5) or an outline with one page per episode",
+      "Move a scene card to another episode of the series from the card panel. Series characters come with it, episode characters are matched by name, and the card lands unplanned at the end of the other episode. Its scene text stays in the old script",
+    ],
+  },
 ];
 
 // Not built yet — discussed and agreed as direction, not a fixed commitment.

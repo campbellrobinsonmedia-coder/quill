@@ -41,6 +41,7 @@ import { LanesView, type LaneMode } from "@/components/plan/lanes-view";
 import { OutlineView } from "@/components/plan/outline-view";
 import { ProgressPanel } from "@/components/plan/progress-panel";
 import type { PlanProgress } from "@/lib/plan-progress";
+import type { EpisodeTarget } from "@/lib/card-move";
 import { createProjectBeat, applyBeatTemplate, reorderBeats } from "@/app/actions/beats";
 import { createCard, saveOutlineLayout } from "@/app/actions/outline";
 import {
@@ -117,6 +118,7 @@ export function PlanBoard({
   availableCharacters,
   availableScenes = [],
   seasonBeats = [],
+  episodeTargets = [],
   sync = null,
   progress = null,
   initialOpenCardId = null,
@@ -127,6 +129,8 @@ export function PlanBoard({
   availableCharacters: { id: string; name: string }[];
   availableScenes?: { id: string; label: string }[];
   seasonBeats?: OverviewBeat[];
+  /** Other episodes in the series a card can be moved to. */
+  episodeTargets?: EpisodeTarget[];
   sync?: ScriptSync | null;
   progress?: PlanProgress | null;
   /** Open this card's panel on arrival (a link from the script's Scenes panel). */
@@ -542,6 +546,7 @@ export function PlanBoard({
           availableCharacters={availableCharacters}
           availableScenes={availableScenes}
           beatOptions={beatOptions}
+          episodeTargets={episodeTargets}
           sceneMissing={sync?.orphanedCardIds.includes(openCard.id) ?? false}
           stat={statOf(openCard.id)}
           onClose={() => setOpenCardId(null)}

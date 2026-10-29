@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildOutlineExport, pdfSafe } from "@/lib/outline-export";
-import { renderIndexCardsPdf, renderOutlinePdf } from "@/lib/outline-pdf";
+import { buildOutlineExport, buildSeasonExport, pdfSafe } from "@/lib/outline-export";
+import {
+  renderIndexCardsPdf,
+  renderOutlinePdf,
+  renderSeasonCardsPdf,
+  renderSeasonOutlinePdf,
+} from "@/lib/outline-pdf";
 
 function toBuffer(doc: PDFKit.PDFDocument): Promise<Buffer> {
   return new Promise((resolve, reject) => {
@@ -116,5 +121,45 @@ describe("PDFs", () => {
     const long = "word ".repeat(2000);
     const data = buildOutlineExport(input([card("x", 0, "b1", { summary: long, turn: long, title: long })]));
     expect(pages(await toBuffer(renderIndexCardsPdf(data)))).toBe(1);
+  });
+});
+
+describe("season prints", () => {
+  const episode = (number: number, cardCount: number) => ({
+    number,
+    title: `Episode ${number} title`,
+    logline: null,
+    format: "TV Hour",
+    beats: [{ id: `b${number}`, title: "Setup", summary: null, order: 0 }],
+    cards: Array.from({ length: cardCount }, (_, i) => card(`${number}-${i}`, i, `b${number}`)),
+    sceneLabels: {},
+  });
+  const season = (counts: number[]) =>
+    buildSeasonExport({
+      seriesTitle: "Lighthouse Chronicles",
+      seasonLabel: "Season 1",
+      episodes: counts.map((n, i) => episode(i + 1, n)),
+    });
+
+  it("tags each card with its episode and numbers scenes within the episode", () => {
+    const data = season([2, 3]);
+    expect(data.episodes[1].export.cards.map((c) => `${c.episode}.${c.number}`)).toEqual(["2.1", "2.2", "2.3"]);
+    expect(data.episodes[0].export.title).toBe("Episode 1: Episode 1 title");
+  });
+
+  it("starts each episode's index cards on a fresh sheet", async () => {
+    // 2 + 5 + 4 cards -> 1 + 2 + 1 sheets, not 3
+    expect(pages(await toBuffer(renderSeasonCardsPdf(season([2, 5, 4]))))).toBe(4);
+  });
+
+  it("skips episodes with no cards on the card sheets but keeps their outline page", async () => {
+    expect(pages(await toBuffer(renderSeasonCardsPdf(season([3, 0, 3]))))).toBe(2);
+    expect(pages(await toBuffer(renderSeasonOutlinePdf(season([3, 0, 3]))))).toBe(3);
+  });
+
+  it("still makes a PDF for a season with nothing in it", async () => {
+    for (const doc of [renderSeasonCardsPdf(season([])), renderSeasonOutlinePdf(season([]))]) {
+      expect((await toBuffer(doc)).subarray(0, 4).toString()).toBe("%PDF");
+    }
   });
 });

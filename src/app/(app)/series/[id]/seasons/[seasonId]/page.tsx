@@ -133,7 +133,7 @@ export default async function SeasonBoardPage({
             {episodes.length} episode{episodes.length === 1 ? "" : "s"}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-3 text-xs">
+        <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-xs">
           <Link
             href={`/series/${id}/seasons/${seasonId}/threads`}
             className="text-neutral-500 underline underline-offset-2 hover:text-neutral-900 dark:hover:text-neutral-100"
@@ -146,6 +146,24 @@ export default async function SeasonBoardPage({
           >
             Export pitch (PDF)
           </a>
+          {totals.scenes > 0 && (
+            <>
+              <a
+                href={`/api/series/${id}/seasons/${seasonId}/export/outline?kind=cards`}
+                download
+                className="text-neutral-500 underline underline-offset-2 hover:text-neutral-900 dark:hover:text-neutral-100"
+              >
+                Print index cards (PDF)
+              </a>
+              <a
+                href={`/api/series/${id}/seasons/${seasonId}/export/outline?kind=outline`}
+                download
+                className="text-neutral-500 underline underline-offset-2 hover:text-neutral-900 dark:hover:text-neutral-100"
+              >
+                Print outlines (PDF)
+              </a>
+            </>
+          )}
         </div>
       </div>
 

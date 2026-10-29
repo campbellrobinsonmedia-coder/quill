@@ -27,7 +27,8 @@ function drawCard(doc: PDFKit.PDFDocument, card: ExportCard, x: number, y: numbe
 
   // Top line: number and heading (or beat), storyline on the right.
   const top = y + PAD;
-  const label = [String(card.number), card.heading ?? card.beat ?? ""].filter(Boolean).join("   ");
+  const numberLabel = card.episode ? `${card.episode}.${card.number}` : String(card.number);
+  const label = [numberLabel, card.heading ?? card.beat ?? ""].filter(Boolean).join("   ");
   doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#666666");
   doc.text(label.toUpperCase(), innerX, top, { width: innerW - 24, height: 10, ellipsis: true, lineBreak: false });
   if (card.storyThread) {
@@ -77,28 +78,49 @@ function drawCard(doc: PDFKit.PDFDocument, card: ExportCard, x: number, y: numbe
   }
 }
 
+// Lays out groups of cards on landscape sheets. Each group starts on a fresh
+// sheet, so a season's episodes can be cut and pinned up separately.
+function drawCardSheets(doc: PDFKit.PDFDocument, groups: ExportCard[][]): boolean {
+  let first = true;
+  let any = false;
+  for (const cards of groups) {
+    cards.forEach((card, i) => {
+      const slot = i % PER_SHEET;
+      if (!first && slot === 0) doc.addPage();
+      first = false;
+      any = true;
+      drawCard(
+        doc,
+        card,
+        GRID_X + (slot % PER_ROW) * CARD_W,
+        GRID_Y + Math.floor(slot / PER_ROW) * CARD_H
+      );
+    });
+  }
+  return any;
+}
+
 export function renderIndexCardsPdf(data: OutlineExport): PDFKit.PDFDocument {
   const doc = new PDFDocument({
     size: [SHEET_W, SHEET_H],
     margin: 0,
     info: { Title: `${data.title} - index cards` },
   });
-
-  if (data.cards.length === 0) {
+  if (!drawCardSheets(doc, [data.cards])) {
     doc.font("Helvetica").fontSize(12).fillColor("#555555").text("No scene cards yet.", 36, 36);
-    return doc;
   }
+  return doc;
+}
 
-  data.cards.forEach((card, i) => {
-    const slot = i % PER_SHEET;
-    if (i > 0 && slot === 0) doc.addPage();
-    drawCard(
-      doc,
-      card,
-      GRID_X + (slot % PER_ROW) * CARD_W,
-      GRID_Y + Math.floor(slot / PER_ROW) * CARD_H
-    );
+export function renderSeasonCardsPdf(season: { title: string; episodes: { export: OutlineExport }[] }): PDFKit.PDFDocument {
+  const doc = new PDFDocument({
+    size: [SHEET_W, SHEET_H],
+    margin: 0,
+    info: { Title: `${season.title} - index cards` },
   });
+  if (!drawCardSheets(doc, season.episodes.map((e) => e.export.cards))) {
+    doc.font("Helvetica").fontSize(12).fillColor("#555555").text("No scene cards yet.", 36, 36);
+  }
   return doc;
 }
 
@@ -136,31 +158,28 @@ function outlineHeight(doc: PDFKit.PDFDocument, data: OutlineExport, size: numbe
   return h;
 }
 
-export function renderOutlinePdf(data: OutlineExport): PDFKit.PDFDocument {
-  const doc = new PDFDocument({
-    size: "LETTER",
-    margins: { top: MARGIN, bottom: MARGIN, left: MARGIN, right: MARGIN },
-    info: { Title: `${data.title} - outline` },
-  });
-
-  doc.font("Helvetica-Bold").fontSize(18).fillColor("#000000").text(data.title, { width: OUTLINE_W });
+// One outline on the current page, at the largest size that fits.
+function drawOutline(doc: PDFKit.PDFDocument, data: OutlineExport) {
+  doc.x = MARGIN;
+  doc.y = MARGIN;
+  doc.font("Helvetica-Bold").fontSize(18).fillColor("#000000").text(data.title, MARGIN, MARGIN, { width: OUTLINE_W });
   const meta = [data.format, data.author ? `by ${data.author}` : ""].filter(Boolean).join("  |  ");
-  if (meta) doc.font("Helvetica").fontSize(9).fillColor("#666666").text(meta);
+  if (meta) doc.font("Helvetica").fontSize(9).fillColor("#666666").text(meta, MARGIN, doc.y, { width: OUTLINE_W });
   if (data.logline) {
-    doc.moveDown(0.3).font("Helvetica-Oblique").fontSize(10).fillColor("#333333").text(data.logline, { width: OUTLINE_W });
+    doc.moveDown(0.3).font("Helvetica-Oblique").fontSize(10).fillColor("#333333").text(data.logline, MARGIN, doc.y, { width: OUTLINE_W });
   }
   doc.moveDown(0.8);
 
   if (data.cards.length === 0) {
-    doc.font("Helvetica").fontSize(11).fillColor("#555555").text("No scene cards yet.");
-    return doc;
+    doc.font("Helvetica").fontSize(11).fillColor("#555555").text("No scene cards yet.", MARGIN, doc.y, { width: OUTLINE_W });
+    return;
   }
 
   const room = PAGE_H - MARGIN - doc.y;
   const size = OUTLINE_SIZES.find((s) => outlineHeight(doc, data, s) <= room) ?? 9;
 
   for (const group of data.groups) {
-    doc.font("Helvetica-Bold").fontSize(size + 1).fillColor("#000000").text(group.label.toUpperCase(), { width: OUTLINE_W });
+    doc.font("Helvetica-Bold").fontSize(size + 1).fillColor("#000000").text(group.label.toUpperCase(), MARGIN, doc.y, { width: OUTLINE_W });
     doc.moveDown(0.2);
     for (const card of group.cards) {
       const { lead, rest } = sceneParagraph(card);
@@ -170,6 +189,32 @@ export function renderOutlinePdf(data: OutlineExport): PDFKit.PDFDocument {
     }
     doc.moveDown(0.4);
     doc.x = MARGIN;
+  }
+}
+
+function outlineDoc(title: string) {
+  return new PDFDocument({
+    size: "LETTER",
+    margins: { top: MARGIN, bottom: MARGIN, left: MARGIN, right: MARGIN },
+    info: { Title: `${title} - outline` },
+  });
+}
+
+export function renderOutlinePdf(data: OutlineExport): PDFKit.PDFDocument {
+  const doc = outlineDoc(data.title);
+  drawOutline(doc, data);
+  return doc;
+}
+
+// Every episode's outline, each on its own page.
+export function renderSeasonOutlinePdf(season: { title: string; episodes: { export: OutlineExport }[] }): PDFKit.PDFDocument {
+  const doc = outlineDoc(season.title);
+  season.episodes.forEach((ep, i) => {
+    if (i > 0) doc.addPage();
+    drawOutline(doc, ep.export);
+  });
+  if (season.episodes.length === 0) {
+    doc.font("Helvetica").fontSize(11).fillColor("#555555").text("No episodes yet.", MARGIN, MARGIN);
   }
   return doc;
 }

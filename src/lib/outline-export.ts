@@ -21,6 +21,8 @@ export function pdfSafe(text: string | null | undefined, opts: { keepNewlines?: 
 
 export type ExportCard = {
   number: number;
+  /** Season prints: the episode it belongs to, like "2" for episode 2. */
+  episode?: string;
   /** The beat it sits under, when the script uses beats. */
   beat: string | null;
   /** Scene heading, from the linked scene or the card's location. */
@@ -122,4 +124,45 @@ export function buildOutlineExport(input: {
     cards: groups.flatMap((g) => g.cards),
     groups,
   };
+}
+
+export type SeasonExportEpisode = {
+  number: number | null;
+  title: string;
+  logline: string | null;
+  export: OutlineExport;
+};
+
+// Every episode of a season as its own outline, for the season-wide prints. Each
+// card is tagged with its episode so "2.5" reads as episode 2, scene 5.
+export function buildSeasonExport(input: {
+  seriesTitle: string;
+  seasonLabel: string;
+  episodes: {
+    number: number | null;
+    title: string;
+    logline: string | null;
+    format: string;
+    beats: { id: string; title: string; summary: string | null; order: number }[];
+    cards: SourceCard[];
+    sceneLabels: Record<string, string>;
+  }[];
+}): { title: string; episodes: SeasonExportEpisode[] } {
+  const episodes = input.episodes.map((ep) => {
+    const data = buildOutlineExport({
+      title: ep.number ? `Episode ${ep.number}: ${ep.title}` : ep.title,
+      logline: ep.logline,
+      author: null,
+      format: `${input.seriesTitle}  |  ${input.seasonLabel}  |  ${ep.format}`,
+      beats: ep.beats,
+      cards: ep.cards,
+      sceneLabels: ep.sceneLabels,
+    });
+    const tag = ep.number ? String(ep.number) : undefined;
+    if (tag) {
+      for (const c of data.cards) c.episode = tag;
+    }
+    return { number: ep.number, title: pdfSafe(ep.title), logline: ep.logline, export: data };
+  });
+  return { title: pdfSafe(`${input.seriesTitle} - ${input.seasonLabel}`), episodes };
 }
