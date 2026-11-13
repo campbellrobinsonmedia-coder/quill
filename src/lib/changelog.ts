@@ -349,6 +349,21 @@ export const CHANGELOG: ChangelogRelease[] = [
       "The \"How this page works\" notes moved to the bottom of each page",
     ],
   },
+  {
+    version: "v35",
+    title: "Numbering follows the structure",
+    items: [
+      "Once a scene has been placed in a beat, scenes in the Unplanned column are no longer numbered; only scenes inside beats count 1, 2, 3 in story order (on the board, in every view and in printouts). While there are no beats, or only empty ones, every scene is still numbered",
+    ],
+  },
+  {
+    version: "v36",
+    title: "INT./EXT. and time of day on cards",
+    items: [
+      "Scene cards have INT./EXT. and Time of day fields. The card's heading line reads like a scene heading (INT. LAMP ROOM - NIGHT), and \"Start this scene in the script\" uses them instead of always guessing INT. and DAY",
+      "\"Update from scene\" and \"Add cards for scenes\" fill INT./EXT. and time of day from the script's headings, and Highlight can pick any time of day or INT./EXT. to show the day/night balance",
+    ],
+  },
 ];
 
 // Not built yet — discussed and agreed as direction, not a fixed commitment.

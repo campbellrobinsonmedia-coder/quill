@@ -69,12 +69,12 @@ describe("buildOutlineExport", () => {
     ])
   );
 
-  it("numbers scenes in story order, unplanned first, like the Plan board", () => {
+  it("numbers the scenes in beats in story order and leaves unplanned ones unnumbered, like the Plan board", () => {
     expect(data.cards.map((c) => [c.number, c.title])).toEqual([
-      [1, "Scene loose"],
-      [2, "Scene b"],
-      [3, "Untitled"],
-      [4, "Scene a"],
+      [0, "Scene loose"],
+      [1, "Scene b"],
+      [2, "Untitled"],
+      [3, "Scene a"],
     ]);
   });
 

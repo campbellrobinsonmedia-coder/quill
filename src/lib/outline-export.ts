@@ -57,6 +57,8 @@ type SourceCard = {
   turn: string | null;
   colorTag: string | null;
   location: string | null;
+  intExt?: string | null;
+  timeOfDay?: string | null;
   storyThread: string | null;
   linkedSceneId: string | null;
   beatId: string | null;
@@ -101,7 +103,7 @@ export function buildOutlineExport(input: {
     return {
       number: numbers.get(id) ?? 0,
       beat: beatLabel,
-      heading: pdfSafe(cardHeading({ sceneLabel, location: c.location })) || null,
+      heading: pdfSafe(cardHeading({ sceneLabel, location: c.location, intExt: c.intExt, timeOfDay: c.timeOfDay })) || null,
       title: pdfSafe(c.title) || "Untitled",
       summary: pdfSafe(c.summary, { keepNewlines: true }),
       turn: pdfSafe(c.turn),

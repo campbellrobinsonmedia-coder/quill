@@ -42,6 +42,7 @@ import { OutlineView } from "@/components/plan/outline-view";
 import { ProgressPanel } from "@/components/plan/progress-panel";
 import type { PlanProgress } from "@/lib/plan-progress";
 import type { EpisodeTarget } from "@/lib/card-move";
+import { INT_EXT_OPTIONS } from "@/lib/card-setting";
 import { GapsPanel } from "@/components/plan/gaps-panel";
 import { openGaps } from "@/lib/set-aside";
 import { ArchivedBeats, type ArchivedBeat } from "@/components/plan/archived-beats";
@@ -194,6 +195,8 @@ export function PlanBoard({
     options.characters.length > 0 ||
     options.threads.length > 0 ||
     options.locations.length > 0 ||
+    options.settings.length > 0 ||
+    options.times.length > 0 ||
     initialCards.some((c) => c.gap);
   const matches = (card: OutlineCardData) => matchesFilter(card, filter);
 
@@ -501,6 +504,24 @@ export function PlanBoard({
                 <optgroup label="Storyline">
                   {options.threads.map((t) => (
                     <option key={t} value={encodeFilter({ kind: "thread", value: t })}>
+                      {t}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {options.settings.length > 0 && (
+                <optgroup label="Interior / exterior">
+                  {options.settings.map((s) => (
+                    <option key={s} value={encodeFilter({ kind: "setting", value: s })}>
+                      {INT_EXT_OPTIONS.find((o) => o.id === s)?.label ?? s}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {options.times.length > 0 && (
+                <optgroup label="Time of day">
+                  {options.times.map((t) => (
+                    <option key={t} value={encodeFilter({ kind: "time", value: t })}>
                       {t}
                     </option>
                   ))}

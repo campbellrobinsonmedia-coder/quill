@@ -84,7 +84,29 @@ describe("story order", () => {
   it("flattens unplanned first, then beat by beat", () => {
     const layout = buildLayout(beats, cards);
     expect(flattenLayout(layout)).toEqual(["c2", "orphan", "c1", "c4", "c3"]);
-    expect(cardNumbers(layout).get("c3")).toBe(5);
+  });
+
+  it("numbers only the scenes in beats once the board has beats", () => {
+    const layout = buildLayout(beats, cards);
+    const numbers = cardNumbers(layout);
+    expect(numbers.has("c2")).toBe(false);
+    expect(numbers.has("orphan")).toBe(false);
+    expect(numbers.get("c1")).toBe(1);
+    expect(numbers.get("c4")).toBe(2);
+    expect(numbers.get("c3")).toBe(3);
+  });
+
+  it("numbers every scene when there are no beats", () => {
+    const layout = buildLayout([], [{ id: "x", beatId: null, order: 0 }, { id: "y", beatId: null, order: 1 }]);
+    expect([...cardNumbers(layout)]).toEqual([["x", 1], ["y", 2]]);
+  });
+
+  it("keeps numbering every scene while the beats are still empty", () => {
+    const layout = buildLayout(
+      [{ id: "b1", order: 0 }],
+      [{ id: "x", beatId: null, order: 0 }, { id: "y", beatId: null, order: 1 }]
+    );
+    expect([...cardNumbers(layout)]).toEqual([["x", 1], ["y", 2]]);
   });
 
   it("serializes with unplanned first as a null beat", () => {

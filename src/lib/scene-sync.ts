@@ -1,3 +1,4 @@
+import { normalizeIntExt, normalizeTime, type IntExt } from "@/lib/card-setting";
 import { groupScenes, type ScreenplayElement } from "@/lib/draft-content";
 import { normalizeCueName } from "@/lib/cast";
 import { parseSceneHeading } from "@/lib/screenplay-analysis";
@@ -137,7 +138,7 @@ export function insertSceneForCard(
 export function sceneFacts(
   elements: ScreenplayElement[],
   sceneId: string
-): { location: string; speakers: string[] } | null {
+): { location: string; intExt: IntExt | null; timeOfDay: string | null; speakers: string[] } | null {
   const scene = groupScenes(elements).find((s) => s.heading?.id === sceneId);
   if (!scene?.heading) return null;
   const speakers: string[] = [];
@@ -146,5 +147,11 @@ export function sceneFacts(
     const name = normalizeCueName(el.text);
     if (name && !speakers.includes(name)) speakers.push(name);
   }
-  return { location: parseSceneHeading(scene.heading.text).location, speakers };
+  const parsed = parseSceneHeading(scene.heading.text);
+  return {
+    location: parsed.location,
+    intExt: normalizeIntExt(parsed.prefix),
+    timeOfDay: normalizeTime(parsed.time),
+    speakers,
+  };
 }

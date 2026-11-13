@@ -59,6 +59,8 @@ export default async function OutlinePage({
         colorTag: true,
         act: true,
         location: true,
+        intExt: true,
+        timeOfDay: true,
         emotion: true,
         storyThread: true,
         linkedSceneId: true,

@@ -1,3 +1,4 @@
+import { normalizeIntExt, normalizeTime } from "@/lib/card-setting";
 import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import {
@@ -437,6 +438,8 @@ async function execute(db: Db, userId: string, plan: Plan, mode: RestoreMode) {
         colorTag: readStr(rec.colorTag),
         act: readStr(rec.act),
         location: readStr(rec.location),
+        intExt: normalizeIntExt(readStr(rec.intExt)),
+        timeOfDay: normalizeTime(readStr(rec.timeOfDay)),
         emotion: readStr(rec.emotion),
         storyThread: readStr(rec.storyThread),
         linkedSceneId: readStr(rec.linkedSceneId),

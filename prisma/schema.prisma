@@ -308,6 +308,10 @@ model OutlineCard {
   colorTag      String?
   act           String?
   location      String?
+  // "INT" | "EXT" | "INT/EXT" and a time like "NIGHT": the parts of a scene
+  // heading planned on the card, used when the scene is started in the script.
+  intExt        String?
+  timeOfDay     String?
   emotion       String?
   storyThread   String?
   linkedSceneId String?

@@ -28,7 +28,7 @@ function drawCard(doc: PDFKit.PDFDocument, card: ExportCard, x: number, y: numbe
 
   // Top line: number and heading (or beat), storyline on the right.
   const top = y + PAD;
-  const numberLabel = card.episode ? `${card.episode}.${card.number}` : String(card.number);
+  const numberLabel = card.number > 0 ? (card.episode ? `${card.episode}.${card.number}` : String(card.number)) : "";
   const label = [numberLabel, card.heading ?? card.beat ?? ""].filter(Boolean).join("   ");
   doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#666666");
   const thread = card.storyThread ? storylineName(card.storyThread).toUpperCase().slice(0, 14) : "";
@@ -145,7 +145,7 @@ function gapLine(gap: OutlineExport["gaps"][number]) {
 }
 
 function sceneParagraph(card: ExportCard) {
-  const lead = `${card.number}. ${card.heading ? `${card.heading} - ` : ""}${card.title}. `;
+  const lead = `${card.number > 0 ? `${card.number}. ` : ""}${card.heading ? `${card.heading} - ` : ""}${card.title}. `;
   const rest = [card.summary.replace(/\n+/g, " "), card.turn ? `Turn: ${card.turn}` : ""]
     .filter(Boolean)
     .join(" ");

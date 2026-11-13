@@ -68,11 +68,19 @@ export function flattenLayout(layout: PlanLayout): string[] {
   ];
 }
 
-// Scenes set aside (skip) get no number, so the rest count 1, 2, 3 without gaps.
+// Scenes in the story's structure are numbered in order. Scenes set aside
+// (skip) get no number, so the rest count 1, 2, 3 without gaps. Once any scene
+// has been placed in a beat, the unplanned scenes aren't part of the structure
+// yet, so they're left unnumbered too. Until then (no beats, or only empty
+// ones) every scene is numbered, so adding a beat doesn't blank the board.
 export function cardNumbers(layout: PlanLayout, skip?: ReadonlySet<string>): Map<string, number> {
   const numbers = new Map<string, number>();
+  const structured = layout.beatIds.some((id) => (layout.columns[id] ?? []).length > 0);
+  const unplanned = new Set(structured ? layout.columns[UNPLANNED] : []);
   let n = 0;
-  for (const id of flattenLayout(layout)) if (!skip?.has(id)) numbers.set(id, ++n);
+  for (const id of flattenLayout(layout)) {
+    if (!skip?.has(id) && !unplanned.has(id)) numbers.set(id, ++n);
+  }
   return numbers;
 }
 

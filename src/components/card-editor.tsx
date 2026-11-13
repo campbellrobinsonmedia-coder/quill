@@ -9,6 +9,7 @@ import { useToast } from "@/components/toast";
 import { OUTLINE_COLORS } from "@/lib/outline-colors";
 import { sceneHeadingFromLabel } from "@/lib/card-face";
 import type { OutlineCardData } from "@/components/outline-card";
+import { INT_EXT_OPTIONS, TIME_SUGGESTIONS } from "@/lib/card-setting";
 import type { EpisodeTarget } from "@/lib/card-move";
 import { CARD_STATUSES, STATUS_LABELS, isCardStatus, type CardStat } from "@/lib/plan-progress";
 
@@ -60,6 +61,8 @@ export function CardEditor({
   const [act, setAct] = useState(card.act ?? "");
   const [storyThread, setStoryThread] = useState(card.storyThread ?? "");
   const [location, setLocation] = useState(card.location ?? "");
+  const [intExt, setIntExt] = useState(card.intExt ?? "");
+  const [timeOfDay, setTimeOfDay] = useState(card.timeOfDay ?? "");
   const [emotion, setEmotion] = useState(card.emotion ?? "");
   const [linkedSceneId, setLinkedSceneId] = useState(card.linkedSceneId ?? "");
   const [beatId, setBeatId] = useState(card.beatId ?? "");
@@ -93,6 +96,8 @@ export function CardEditor({
       gap,
       act: act || null,
       location: location || null,
+      intExt: intExt || null,
+      timeOfDay: timeOfDay.trim() || null,
       emotion: emotion || null,
       storyThread: storyThread || null,
       linkedSceneId: linkedSceneId || null,
@@ -128,6 +133,8 @@ export function CardEditor({
         if (facts.location) {
           setLocation((prev) => (prev.trim().toLowerCase() === facts.location.toLowerCase() ? prev : facts.location));
         }
+        if (facts.intExt) setIntExt(facts.intExt);
+        if (facts.timeOfDay) setTimeOfDay(facts.timeOfDay);
         setCharacterIds((prev) => new Set([...prev, ...facts.characterIds]));
         toast.success(
           facts.unmatched.length > 0
@@ -215,7 +222,7 @@ export function CardEditor({
   return (
     <div
       role="dialog"
-      aria-label={`Edit scene card ${number}`}
+      aria-label={number > 0 ? `Edit scene card ${number}` : "Edit scene card"}
       onKeyDown={(e) => {
         if (e.key === "Escape") onClose();
         if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
@@ -226,7 +233,7 @@ export function CardEditor({
       className="fixed inset-x-0 bottom-0 top-12 z-50 flex flex-col bg-white shadow-xl sm:left-auto sm:w-[26rem] sm:border-l sm:border-neutral-200 dark:bg-neutral-950 sm:dark:border-neutral-800"
     >
       <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
-        <h2 className="text-sm font-medium">{card.gap ? "Gap to fill" : card.parked ? "Scene card (set aside)" : `Scene card ${number}`}</h2>
+        <h2 className="text-sm font-medium">{card.gap ? "Gap to fill" : card.parked ? "Scene card (set aside)" : number > 0 ? `Scene card ${number}` : "Scene card"}</h2>
         <button
           type="button"
           onClick={onClose}
@@ -327,6 +334,46 @@ export function CardEditor({
             </div>
           </div>
         )}
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="card-int-ext" className={LABEL}>
+              INT. / EXT.
+            </label>
+            <select
+              id="card-int-ext"
+              value={intExt}
+              onChange={(e) => setIntExt(e.target.value)}
+              className={FIELD}
+            >
+              <option value="">Not set</option>
+              {INT_EXT_OPTIONS.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="card-time" className={LABEL}>
+              Time of day
+            </label>
+            <input
+              id="card-time"
+              value={timeOfDay}
+              onChange={(e) => setTimeOfDay(e.target.value)}
+              list="time-of-day-suggestions"
+              maxLength={30}
+              placeholder="DAY, NIGHT…"
+              className={FIELD}
+            />
+            <datalist id="time-of-day-suggestions">
+              {TIME_SUGGESTIONS.map((t) => (
+                <option key={t} value={t} />
+              ))}
+            </datalist>
+          </div>
+        </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>

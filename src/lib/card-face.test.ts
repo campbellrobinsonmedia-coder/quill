@@ -49,6 +49,12 @@ describe("headingForCard", () => {
   it("keeps a heading the writer already typed", () => {
     expect(headingForCard("ext. dock - night")).toBe("EXT. DOCK - NIGHT");
   });
+  it("uses the INT./EXT. and time planned on the card", () => {
+    expect(headingForCard("Dock", "EXT", "night")).toBe("EXT. DOCK - NIGHT");
+    expect(headingForCard("Dock", "INT/EXT", null)).toBe("INT./EXT. DOCK - DAY");
+    expect(headingForCard("Dock", null, "dusk")).toBe("INT. DOCK - DUSK");
+    expect(headingForCard(null, "EXT", "night")).toBe("EXT. ");
+  });
   it("leaves an empty prefix to fill in when there's no location", () => {
     expect(headingForCard(null)).toBe("INT. ");
     expect(headingForCard("  ")).toBe("INT. ");

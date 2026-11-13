@@ -1,5 +1,6 @@
 "use server";
 
+import { normalizeIntExt, normalizeTime } from "@/lib/card-setting";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
@@ -69,6 +70,8 @@ export async function addCardsForScenes(projectId: string, sceneIds?: string[]) 
       projectId,
       title: s.text,
       location: parseSceneHeading(s.text).location || null,
+      intExt: normalizeIntExt(parseSceneHeading(s.text).prefix),
+      timeOfDay: normalizeTime(parseSceneHeading(s.text).time),
       linkedSceneId: s.id,
       order: order++,
     })),
@@ -169,7 +172,7 @@ export async function startSceneFromCard(cardId: string) {
   const userId = await requireUserId();
   const card = await prisma.outlineCard.findFirst({
     where: { id: cardId, project: { userId } },
-    select: { id: true, projectId: true, location: true, linkedSceneId: true, project: { select: { writingMode: true } } },
+    select: { id: true, projectId: true, location: true, intExt: true, timeOfDay: true, linkedSceneId: true, project: { select: { writingMode: true } } },
   });
   if (!card) throw new Error("Not found");
   if (card.project.writingMode !== "SCREENPLAY") {
@@ -196,7 +199,7 @@ export async function startSceneFromCard(cardId: string) {
     orderBy: { order: "asc" },
     select: { id: true, linkedSceneId: true },
   });
-  const heading = { id: makeId(), type: "scene_heading" as const, text: headingForCard(card.location) };
+  const heading = { id: makeId(), type: "scene_heading" as const, text: headingForCard(card.location, card.intExt, card.timeOfDay) };
   const action = { id: makeId(), type: "action" as const, text: "" };
   const next: ScreenplayContent = {
     type: "screenplay",
@@ -253,6 +256,8 @@ export async function sceneFactsForCard(cardId: string) {
   const byKey = new Map(characters.map((c) => [nameKey(c.name), c.id]));
   return {
     location: facts.location,
+    intExt: facts.intExt,
+    timeOfDay: facts.timeOfDay,
     characterIds: facts.speakers.flatMap((s) => byKey.get(s) ?? []),
     unmatched: facts.speakers.filter((s) => !byKey.has(s)),
   };

@@ -142,8 +142,13 @@ describe("sceneFacts", () => {
   ];
 
   it("reads the location and the speakers of just that scene", () => {
-    expect(sceneFacts(els, "h")).toEqual({ location: "LAMP ROOM", speakers: ["MARA", "ELI"] });
-    expect(sceneFacts(els, "h2")).toEqual({ location: "DOCK", speakers: ["NILS"] });
+    expect(sceneFacts(els, "h")).toEqual({
+      location: "LAMP ROOM",
+      intExt: "INT",
+      timeOfDay: "NIGHT",
+      speakers: ["MARA", "ELI"],
+    });
+    expect(sceneFacts(els, "h2")).toEqual({ location: "DOCK", intExt: "EXT", timeOfDay: "DAY", speakers: ["NILS"] });
   });
 
   it("returns null for a scene that isn't there", () => {

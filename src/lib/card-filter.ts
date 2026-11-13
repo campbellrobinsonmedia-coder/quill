@@ -5,10 +5,14 @@ export type CardFilter =
   | { kind: "character"; value: string } // character id
   | { kind: "thread"; value: string } // storyline label
   | { kind: "location"; value: string } // location, case-insensitive
+  | { kind: "setting"; value: string } // INT, EXT or INT/EXT
+  | { kind: "time"; value: string } // time of day, case-insensitive
   | { kind: "gap" }; // gaps still to be filled
 
 type FilterableCard = {
   gap?: boolean;
+  intExt?: string | null;
+  timeOfDay?: string | null;
   storyThread: string | null;
   location: string | null;
   characters: { id: string }[];
@@ -25,6 +29,10 @@ export function matchesFilter(card: FilterableCard, filter: CardFilter | null): 
       return norm(card.storyThread) === norm(filter.value);
     case "location":
       return norm(card.location) === norm(filter.value);
+    case "setting":
+      return norm(card.intExt) === norm(filter.value);
+    case "time":
+      return norm(card.timeOfDay) === norm(filter.value);
     case "gap":
       return !!card.gap;
   }
@@ -34,6 +42,8 @@ export type FilterOptions = {
   characters: { id: string; name: string }[];
   threads: string[];
   locations: string[];
+  settings: string[];
+  times: string[];
 };
 
 // What's worth highlighting: only the characters, storylines and locations
@@ -44,7 +54,12 @@ export function filterOptions(
   const characters = new Map<string, string>();
   const threads = new Map<string, string>();
   const locations = new Map<string, string>();
+  const settings = new Set<string>();
+  const times = new Map<string, string>();
   for (const card of cards) {
+    if (card.intExt) settings.add(card.intExt.trim().toUpperCase());
+    const time = card.timeOfDay?.trim();
+    if (time && !times.has(norm(time))) times.set(norm(time), time.toUpperCase());
     for (const c of card.characters) characters.set(c.id, c.name);
     const thread = card.storyThread?.trim();
     if (thread && !threads.has(norm(thread))) threads.set(norm(thread), thread);
@@ -57,6 +72,8 @@ export function filterOptions(
     ),
     threads: Array.from(threads.values()).sort((a, b) => a.localeCompare(b)),
     locations: Array.from(locations.values()).sort((a, b) => a.localeCompare(b)),
+    settings: ["INT", "EXT", "INT/EXT"].filter((s) => settings.has(s)),
+    times: Array.from(times.values()).sort((a, b) => a.localeCompare(b)),
   };
 }
 
@@ -73,7 +90,7 @@ export function decodeFilter(value: string): CardFilter | null {
   const kind = value.slice(0, i);
   const rest = value.slice(i + 1);
   if (!rest) return null;
-  return kind === "character" || kind === "thread" || kind === "location"
+  return kind === "character" || kind === "thread" || kind === "location" || kind === "setting" || kind === "time"
     ? ({ kind, value: rest } as CardFilter)
     : null;
 }

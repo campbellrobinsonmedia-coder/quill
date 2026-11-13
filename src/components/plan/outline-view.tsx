@@ -91,7 +91,7 @@ function OutlineRow({
     });
   }
 
-  const heading = cardHeading({ sceneLabel: sceneMissing ? null : sceneLabel, location: card.location });
+  const heading = cardHeading({ sceneLabel: sceneMissing ? null : sceneLabel, location: card.location, intExt: card.intExt, timeOfDay: card.timeOfDay });
 
   return (
     <li
@@ -100,7 +100,7 @@ function OutlineRow({
       }`}
     >
       <div className="flex w-8 shrink-0 flex-col items-end gap-1.5 pt-1.5">
-        <span className="text-xs font-medium tabular-nums text-neutral-500">{card.gap ? "?" : card.parked ? "–" : number}</span>
+        <span className="text-xs font-medium tabular-nums text-neutral-500">{card.gap ? "?" : card.parked ? "–" : number > 0 ? number : ""}</span>
         <span className="h-2 w-2 rounded-full" style={{ backgroundColor: swatchFor(card.colorTag) }} />
       </div>
       <div className="min-w-0 flex-1 space-y-0.5">
@@ -115,7 +115,7 @@ function OutlineRow({
           value={title}
           onChange={setTitle}
           onBlur={save}
-          label={`Scene ${number} title`}
+          label={number > 0 ? `Scene ${number} title` : `${card.title} title`}
           placeholder="Title"
           className="text-sm font-medium"
         />
@@ -123,7 +123,7 @@ function OutlineRow({
           value={summary}
           onChange={setSummary}
           onBlur={save}
-          label={`Scene ${number}: what happens`}
+          label={number > 0 ? `Scene ${number}: what happens` : `${card.title}: what happens`}
           placeholder="What happens…"
           className="text-sm text-neutral-700 dark:text-neutral-300"
         />
@@ -135,7 +135,7 @@ function OutlineRow({
             value={turn}
             onChange={setTurn}
             onBlur={save}
-            label={`Scene ${number}: the turn`}
+            label={number > 0 ? `Scene ${number}: the turn` : `${card.title}: the turn`}
             placeholder="The turn — what changes…"
             className="text-sm italic text-neutral-600 dark:text-neutral-400"
           />

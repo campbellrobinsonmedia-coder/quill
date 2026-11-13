@@ -21,6 +21,8 @@ export type OutlineCardData = {
   colorTag: string | null;
   act: string | null;
   location: string | null;
+  intExt: string | null;
+  timeOfDay: string | null;
   emotion: string | null;
   storyThread: string | null;
   linkedSceneId: string | null;
@@ -82,7 +84,7 @@ export function OutlineCard({
     });
   }
 
-  const heading = cardHeading({ sceneLabel: sceneMissing ? null : sceneLabel, location: card.location });
+  const heading = cardHeading({ sceneLabel: sceneMissing ? null : sceneLabel, location: card.location, intExt: card.intExt, timeOfDay: card.timeOfDay });
   const { shown, extra } = splitCharacters(card.characters, 4);
   const blank = !card.summary && !card.turn;
   const showStatus = stat && stat.status !== "idea";
@@ -94,7 +96,7 @@ export function OutlineCard({
       style={style}
       role="button"
       tabIndex={0}
-      aria-label={`Scene card ${number}: ${card.title}. Open to edit.`}
+      aria-label={`Scene card${number > 0 ? ` ${number}` : ""}: ${card.title}. Open to edit.`}
       onClick={onOpen}
       onKeyDown={(e) => {
         if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
@@ -112,7 +114,7 @@ export function OutlineCard({
     >
       <div className="flex items-center gap-1.5">
         <span className="shrink-0 text-xs font-medium tabular-nums text-neutral-500 dark:text-neutral-400">
-          {card.gap ? "?" : card.parked ? "–" : number}
+          {card.gap ? "?" : card.parked ? "–" : number > 0 ? number : ""}
         </span>
         <div
           {...attributes}
