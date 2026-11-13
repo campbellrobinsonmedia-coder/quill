@@ -1,3 +1,4 @@
+import { PageHelp } from "@/components/page-help";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSeriesOrNotFound } from "@/lib/get-series";
@@ -61,6 +62,7 @@ export default async function SeriesOverviewPage({
 
   return (
     <div className="flex flex-1 flex-col gap-8 p-4 sm:p-6">
+      <PageHelp id="series" />
       <div className="-mb-4 flex justify-end text-xs">
         <a
           href={`/api/series/${id}/export/bible`}

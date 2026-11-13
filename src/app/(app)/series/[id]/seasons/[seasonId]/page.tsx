@@ -1,3 +1,4 @@
+import { PageHelp } from "@/components/page-help";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getSeasonOrNotFound } from "@/lib/get-series";
@@ -64,7 +65,8 @@ export default async function SeasonBoardPage({
       orderBy: { episodeNumber: "asc" },
       include: {
         _count: { select: { outlineCards: true } },
-        outlineCards: { select: { id: true, status: true, linkedSceneId: true, beatId: true } },
+        outlineCards: { select: { id: true, status: true, linkedSceneId: true, beatId: true, parked: true } },
+        beats: { where: { seasonId: null, seriesId: null, archived: true }, select: { id: true } },
         draft: { select: { wordCount: true, sceneNumbersLocked: true, content: true } },
       },
     }),
@@ -108,6 +110,7 @@ export default async function SeasonBoardPage({
         formatTemplate: ep.formatTemplate,
         pageTarget: ep.pageTarget,
         cards: ep.outlineCards,
+        archivedBeatIds: new Set(ep.beats.map((b) => b.id)),
         draftContent: ep.draft ? (ep.draft.content as unknown as DraftContent) : null,
       }),
     ])
@@ -118,6 +121,7 @@ export default async function SeasonBoardPage({
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
+      <PageHelp id="season" />
       <div className="flex items-center gap-2 text-sm">
         <Link href={`/series/${id}`} className="text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100">
           ← {season.series.title}

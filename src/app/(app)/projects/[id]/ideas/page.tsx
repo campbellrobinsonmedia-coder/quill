@@ -1,3 +1,4 @@
+import { PageHelp } from "@/components/page-help";
 import { prisma } from "@/lib/prisma";
 import { getProjectOrNotFound } from "@/lib/get-project";
 import { QuickAddIdea } from "@/components/quick-add-idea";
@@ -21,6 +22,7 @@ export default async function ProjectIdeasPage({
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
+      <PageHelp id="project-ideas" />
       <QuickAddIdea projectId={id} />
       {ideas.length === 0 ? (
         <p className="text-sm text-neutral-500">

@@ -42,7 +42,7 @@ export async function GET(
       beats: {
         where: { seasonId: null, seriesId: null },
         orderBy: { order: "asc" },
-        select: { id: true, title: true, summary: true, order: true },
+        select: { id: true, title: true, summary: true, order: true, archived: true },
       },
     },
   });

@@ -1,10 +1,13 @@
 "use client";
 
+import { useTransition } from "react";
 import Link from "next/link";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { swatchFor } from "@/lib/outline-colors";
 import { cardHeading, initials, splitCharacters } from "@/lib/card-face";
+import { updateCard } from "@/app/actions/outline";
+import { useToast } from "@/components/toast";
 import { STATUS_LABELS, type CardStat } from "@/lib/plan-progress";
 
 export type OutlineCardData = {
@@ -13,6 +16,7 @@ export type OutlineCardData = {
   summary: string | null;
   turn: string | null;
   status: string;
+  parked: boolean;
   colorTag: string | null;
   act: string | null;
   location: string | null;
@@ -57,11 +61,24 @@ export function OutlineCard({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: card.id, data: { type: "card" } });
 
+  const toast = useToast();
+  const [asidePending, startAside] = useTransition();
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : dimmed ? 0.3 : 1,
+    opacity: isDragging ? 0.5 : dimmed ? 0.3 : card.parked ? 0.55 : 1,
   };
+
+  // Greys the scene out (or brings it back) without opening the panel.
+  function toggleAside() {
+    startAside(async () => {
+      try {
+        await updateCard(card.id, { parked: !card.parked });
+      } catch {
+        toast.error("Couldn't update the scene — try again");
+      }
+    });
+  }
 
   const heading = cardHeading({ sceneLabel: sceneMissing ? null : sceneLabel, location: card.location });
   const { shown, extra } = splitCharacters(card.characters, 4);
@@ -83,7 +100,9 @@ export function OutlineCard({
           onOpen();
         }
       }}
-      className={`flex w-full cursor-pointer flex-col gap-1.5 rounded-md border bg-white p-3 text-left shadow-sm transition-shadow hover:shadow-md dark:bg-neutral-900 ${
+      className={`group flex w-full cursor-pointer flex-col gap-1.5 rounded-md border bg-white p-3 text-left shadow-sm transition-shadow hover:shadow-md dark:bg-neutral-900 ${
+        card.parked ? "border-dashed" : ""
+      } ${
         active
           ? "border-neutral-900 ring-1 ring-neutral-900 dark:border-white dark:ring-white"
           : "border-neutral-200 dark:border-neutral-800"
@@ -91,7 +110,7 @@ export function OutlineCard({
     >
       <div className="flex items-center gap-1.5">
         <span className="shrink-0 text-xs font-medium tabular-nums text-neutral-500 dark:text-neutral-400">
-          {number}
+          {card.parked ? "–" : number}
         </span>
         <div
           {...attributes}
@@ -110,12 +129,28 @@ export function OutlineCard({
         </p>
         {card.storyThread && (
           <span
-            title={`Storyline ${card.storyThread}`}
-            className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
+            title={`Storyline: ${card.storyThread}`}
+            className="max-w-24 shrink-0 truncate rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
           >
             {card.storyThread}
           </span>
         )}
+        <button
+          type="button"
+          disabled={asidePending}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleAside();
+          }}
+          title={card.parked ? "Bring this scene back" : "Set aside: grey it out without deleting it"}
+          className={`shrink-0 rounded px-1 py-0.5 text-[10px] text-neutral-500 underline underline-offset-2 hover:text-neutral-900 disabled:opacity-60 dark:hover:text-neutral-100 ${
+            card.parked
+              ? ""
+              : "sm:opacity-0 sm:transition-opacity sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
+          }`}
+        >
+          {card.parked ? "Bring back" : "Set aside"}
+        </button>
       </div>
 
       {beatTitle && (
@@ -123,7 +158,9 @@ export function OutlineCard({
           {beatTitle}
         </p>
       )}
-      <p className="text-sm font-medium leading-snug">{card.title}</p>
+      <p className={`text-sm font-medium leading-snug ${card.parked ? "line-through decoration-neutral-400" : ""}`}>
+        {card.title}
+      </p>
 
       {card.summary && (
         <p className="line-clamp-3 whitespace-pre-wrap text-xs text-neutral-600 dark:text-neutral-400">

@@ -68,8 +68,12 @@ export function flattenLayout(layout: PlanLayout): string[] {
   ];
 }
 
-export function cardNumbers(layout: PlanLayout): Map<string, number> {
-  return new Map(flattenLayout(layout).map((id, i) => [id, i + 1]));
+// Scenes set aside (skip) get no number, so the rest count 1, 2, 3 without gaps.
+export function cardNumbers(layout: PlanLayout, skip?: ReadonlySet<string>): Map<string, number> {
+  const numbers = new Map<string, number>();
+  let n = 0;
+  for (const id of flattenLayout(layout)) if (!skip?.has(id)) numbers.set(id, ++n);
+  return numbers;
 }
 
 // What the server needs to persist the board.

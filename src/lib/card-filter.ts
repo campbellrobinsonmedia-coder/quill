@@ -38,12 +38,12 @@ export function filterOptions(
   cards: (FilterableCard & { characters: { id: string; name: string }[] })[]
 ): FilterOptions {
   const characters = new Map<string, string>();
-  const threads = new Set<string>();
+  const threads = new Map<string, string>();
   const locations = new Map<string, string>();
   for (const card of cards) {
     for (const c of card.characters) characters.set(c.id, c.name);
     const thread = card.storyThread?.trim();
-    if (thread) threads.add(thread);
+    if (thread && !threads.has(norm(thread))) threads.set(norm(thread), thread);
     const loc = card.location?.trim();
     if (loc && !locations.has(norm(loc))) locations.set(norm(loc), loc);
   }
@@ -51,7 +51,7 @@ export function filterOptions(
     characters: Array.from(characters, ([id, name]) => ({ id, name })).sort((a, b) =>
       a.name.localeCompare(b.name)
     ),
-    threads: Array.from(threads).sort((a, b) => a.localeCompare(b)),
+    threads: Array.from(threads.values()).sort((a, b) => a.localeCompare(b)),
     locations: Array.from(locations.values()).sort((a, b) => a.localeCompare(b)),
   };
 }

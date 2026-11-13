@@ -1,6 +1,7 @@
 import { cardHeading } from "@/lib/card-face";
 import { swatchFor } from "@/lib/outline-colors";
 import { buildLayout, cardNumbers, UNPLANNED } from "@/lib/plan-layout";
+import { withoutSetAside } from "@/lib/set-aside";
 
 // The Plan board as plain data for the printable PDFs (index cards, outline).
 
@@ -58,6 +59,7 @@ type SourceCard = {
   linkedSceneId: string | null;
   beatId: string | null;
   order: number;
+  parked?: boolean;
   characters: { name: string }[];
 };
 
@@ -66,11 +68,18 @@ export function buildOutlineExport(input: {
   logline: string | null;
   author: string | null;
   format: string;
-  beats: { id: string; title: string; summary: string | null; order: number }[];
+  beats: { id: string; title: string; summary: string | null; order: number; archived?: boolean }[];
   cards: SourceCard[];
   /** scene heading id -> label like "3. INT. ATTIC - DAY" */
   sceneLabels: Record<string, string>;
 }): OutlineExport {
+  // Scenes set aside, and archived beats with their scenes, aren't printed.
+  const archivedBeatIds = new Set(input.beats.filter((b) => b.archived).map((b) => b.id));
+  input = {
+    ...input,
+    beats: input.beats.filter((b) => !b.archived),
+    cards: withoutSetAside(input.cards, archivedBeatIds),
+  };
   const layout = buildLayout(input.beats, input.cards);
   const numbers = cardNumbers(layout);
   const beatsById = new Map(input.beats.map((b) => [b.id, b]));
@@ -143,7 +152,7 @@ export function buildSeasonExport(input: {
     title: string;
     logline: string | null;
     format: string;
-    beats: { id: string; title: string; summary: string | null; order: number }[];
+    beats: { id: string; title: string; summary: string | null; order: number; archived?: boolean }[];
     cards: SourceCard[];
     sceneLabels: Record<string, string>;
   }[];

@@ -67,7 +67,7 @@ export function LanesView({
           <div className="sticky left-0 z-10 bg-white dark:bg-neutral-950" />
           {ordered.map((c) => (
             <div key={c.id} className="px-2 pb-1 text-[10px] tabular-nums text-neutral-400">
-              {numbers.get(c.id)}
+              {c.parked ? "–" : numbers.get(c.id)}
             </div>
           ))}
         </div>
@@ -99,7 +99,7 @@ export function LanesView({
                       openCardId === card.id
                         ? "border-neutral-900 dark:border-white"
                         : "border-neutral-200 hover:border-neutral-400 dark:border-neutral-800"
-                    } ${matches(card) ? "" : "opacity-30"}`}
+                    } ${card.parked ? "border-dashed opacity-50" : ""} ${matches(card) ? "" : "opacity-30"}`}
                   >
                     <span
                       className="mt-0.5 h-2 w-2 shrink-0 rounded-full"

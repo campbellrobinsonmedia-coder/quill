@@ -42,6 +42,7 @@ import { OutlineView } from "@/components/plan/outline-view";
 import { ProgressPanel } from "@/components/plan/progress-panel";
 import type { PlanProgress } from "@/lib/plan-progress";
 import type { EpisodeTarget } from "@/lib/card-move";
+import { ArchivedBeats, type ArchivedBeat } from "@/components/plan/archived-beats";
 import { createProjectBeat, applyBeatTemplate, reorderBeats } from "@/app/actions/beats";
 import { createCard, saveOutlineLayout } from "@/app/actions/outline";
 import {
@@ -119,6 +120,7 @@ export function PlanBoard({
   availableScenes = [],
   seasonBeats = [],
   episodeTargets = [],
+  archivedBeats = [],
   sync = null,
   progress = null,
   initialOpenCardId = null,
@@ -131,6 +133,8 @@ export function PlanBoard({
   seasonBeats?: OverviewBeat[];
   /** Other episodes in the series a card can be moved to. */
   episodeTargets?: EpisodeTarget[];
+  /** Beats put away from the board, with how many scenes wait in each. */
+  archivedBeats?: ArchivedBeat[];
   sync?: ScriptSync | null;
   progress?: PlanProgress | null;
   /** Open this card's panel on arrival (a link from the script's Scenes panel). */
@@ -157,7 +161,10 @@ export function PlanBoard({
 
   const beatsById = new Map(initialBeats.map((b) => [b.id, b]));
   const cardsById = new Map(initialCards.map((c) => [c.id, c]));
-  const numbers = cardNumbers(layout);
+  const numbers = cardNumbers(
+    layout,
+    new Set(initialCards.filter((c) => c.parked).map((c) => c.id))
+  );
   const beatOptions = layout.beatIds.map((id) => ({ id, title: beatsById.get(id)?.title ?? "Beat" }));
 
   const [newBeat, setNewBeat] = useState("");
@@ -547,6 +554,7 @@ export function PlanBoard({
           availableScenes={availableScenes}
           beatOptions={beatOptions}
           episodeTargets={episodeTargets}
+          storylines={options.threads}
           sceneMissing={sync?.orphanedCardIds.includes(openCard.id) ?? false}
           stat={statOf(openCard.id)}
           onClose={() => setOpenCardId(null)}
@@ -667,6 +675,8 @@ export function PlanBoard({
         </DragOverlay>
       </DndContext>
       )}
+
+      <ArchivedBeats beats={archivedBeats} />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { PageHelp } from "@/components/page-help";
 import { getProjectOrNotFound } from "@/lib/get-project";
 import { ProjectSettingsForm } from "@/components/project-settings-form";
 import { defaultPageTarget } from "@/lib/plan-progress";
@@ -15,6 +16,7 @@ export default async function ProjectSettingsPage({
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
+      <PageHelp id="project-settings" />
       <ProjectSettingsForm
         projectId={id}
         isEpisode={Boolean(project.seasonId)}

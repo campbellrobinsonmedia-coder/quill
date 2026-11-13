@@ -330,6 +330,16 @@ export const CHANGELOG: ChangelogRelease[] = [
       "Move a scene card to another episode of the series from the card panel. Series characters come with it, episode characters are matched by name, and the card lands unplanned at the end of the other episode. Its scene text stays in the old script",
     ],
   },
+  {
+    version: "v33",
+    title: "Set aside, archive beats, named storylines, guide",
+    items: [
+      "Set a scene aside (button on the card, or a tick in its panel) to grey it out without deleting it. Set-aside scenes drop out of the numbering, progress, season roll-up, storyline grid and printouts, and \"Bring back\" restores them",
+      "Beats have a visible ⋯ menu with Edit, Archive and Delete. Archiving puts a beat away with its scenes (under \"Archived beats\" below the board) and Restore brings it back; Delete removes it and moves its scenes to Unplanned",
+      "Storylines can be names, not just letters: shown as typed on cards, lanes, the season grid and printed cards, suggested from ones you've already used, and \"Rename everywhere\" changes one across every scene",
+      "A Guide (top bar) explains every page, and each page has a collapsed \"How this page works\" note",
+    ],
+  },
 ];
 
 // Not built yet — discussed and agreed as direction, not a fixed commitment.

@@ -1,3 +1,4 @@
+import { storylineKey, storylineTitle } from "@/lib/storyline";
 import { UNPLANNED, type PlanLayout } from "@/lib/plan-layout";
 
 // The Lanes view: rows are storylines (or characters), columns are scenes in
@@ -20,16 +21,18 @@ export const NO_THREAD = "—";
 
 export function buildThreadLanes<T extends LaneCard>(ordered: T[]): Lane<T>[] {
   const keys: string[] = [];
+  const names = new Map<string, string>();
   for (const c of ordered) {
-    const k = c.storyThread?.trim().toUpperCase() || NO_THREAD;
+    const k = storylineKey(c.storyThread) || NO_THREAD;
     if (!keys.includes(k)) keys.push(k);
+    if (k !== NO_THREAD && !names.has(k)) names.set(k, c.storyThread!);
   }
   // Named storylines alphabetically, scenes with no storyline last.
   keys.sort((a, b) => (a === NO_THREAD ? 1 : b === NO_THREAD ? -1 : a.localeCompare(b)));
   return keys.map((key) => ({
     key,
-    label: key === NO_THREAD ? "No storyline" : `Storyline ${key}`,
-    cells: ordered.map((c) => ((c.storyThread?.trim().toUpperCase() || NO_THREAD) === key ? c : null)),
+    label: key === NO_THREAD ? "No storyline" : storylineTitle(names.get(key) ?? key),
+    cells: ordered.map((c) => ((storylineKey(c.storyThread) || NO_THREAD) === key ? c : null)),
   }));
 }
 

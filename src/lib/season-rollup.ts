@@ -3,6 +3,7 @@ import {
   estimateScenePages,
   type DraftContent,
 } from "@/lib/draft-content";
+import { withoutSetAside } from "@/lib/set-aside";
 import { buildProgress, pageTargetFor, type CardStatus } from "@/lib/plan-progress";
 
 // The season page's view of how far each episode has got, built from the same
@@ -18,12 +19,20 @@ export type EpisodeRollup = {
 export function episodeRollup(episode: {
   formatTemplate: string;
   pageTarget: number | null;
-  cards: { id: string; status: string; linkedSceneId: string | null; beatId: string | null }[];
+  cards: {
+    id: string;
+    status: string;
+    linkedSceneId: string | null;
+    beatId: string | null;
+    parked?: boolean;
+  }[];
+  /** The episode's archived beats; their scenes don't count. */
+  archivedBeatIds?: ReadonlySet<string>;
   draftContent: DraftContent | null;
 }): EpisodeRollup {
   const screenplay = episode.draftContent?.type === "screenplay" ? episode.draftContent : null;
   const progress = buildProgress({
-    cards: episode.cards,
+    cards: withoutSetAside(episode.cards, episode.archivedBeatIds),
     scenes: screenplay ? estimateScenePages(screenplay.elements) : null,
     beats: [],
     scriptPages: screenplay ? estimatePageCount(screenplay) : null,

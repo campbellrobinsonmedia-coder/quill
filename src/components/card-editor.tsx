@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { deleteCard, moveCardToEpisode, updateCard } from "@/app/actions/outline";
+import { deleteCard, moveCardToEpisode, renameStoryline, updateCard } from "@/app/actions/outline";
 import { sceneFactsForCard, startSceneFromCard } from "@/app/actions/scene-sync";
 import { useToast } from "@/components/toast";
 import { OUTLINE_COLORS } from "@/lib/outline-colors";
@@ -26,6 +26,7 @@ export function CardEditor({
   availableScenes,
   beatOptions,
   episodeTargets,
+  storylines,
   sceneMissing,
   stat,
   onClose,
@@ -40,6 +41,8 @@ export function CardEditor({
   beatOptions: { id: string; title: string }[];
   /** Other episodes in the series; empty for a standalone project. */
   episodeTargets: EpisodeTarget[];
+  /** Storylines already used in this project, for the suggestions. */
+  storylines: string[];
   sceneMissing: boolean;
   /** Progress read from the script. */
   stat?: CardStat;
@@ -62,6 +65,7 @@ export function CardEditor({
   const [beatId, setBeatId] = useState(card.beatId ?? "");
   const [status, setStatus] = useState(isCardStatus(card.status) ? card.status : "idea");
   const [moveTo, setMoveTo] = useState("");
+  const [parked, setParked] = useState(card.parked);
   const [colorTag, setColorTag] = useState(card.colorTag ?? "neutral");
   const [characterIds, setCharacterIds] = useState(new Set(card.characters.map((c) => c.id)));
 
@@ -84,6 +88,7 @@ export function CardEditor({
       summary,
       turn: turn.trim() || null,
       status,
+      parked,
       act: act || null,
       location: location || null,
       emotion: emotion || null,
@@ -161,6 +166,24 @@ export function CardEditor({
     });
   }
 
+  // Renames this card's saved storyline on every scene that has it.
+  function renameEverywhere() {
+    const current = card.storyThread;
+    if (!current) return;
+    const next = window.prompt(`Rename the storyline "${current}" on every scene to:`, current);
+    if (next === null || !next.trim() || next.trim() === current) return;
+    startTransition(async () => {
+      try {
+        const { renamed } = await renameStoryline(projectId, current, next);
+        setStoryThread(next.trim());
+        toast.success(`Renamed on ${renamed} scene${renamed === 1 ? "" : "s"}`);
+        onClose();
+      } catch {
+        toast.error("Couldn't rename — try again");
+      }
+    });
+  }
+
   // Moves the card (with what's in the panel) to another episode.
   function move() {
     const target = episodeTargets.find((t) => t.id === moveTo);
@@ -201,7 +224,7 @@ export function CardEditor({
       className="fixed inset-x-0 bottom-0 top-12 z-50 flex flex-col bg-white shadow-xl sm:left-auto sm:w-[26rem] sm:border-l sm:border-neutral-200 dark:bg-neutral-950 sm:dark:border-neutral-800"
     >
       <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
-        <h2 className="text-sm font-medium">Scene card {number}</h2>
+        <h2 className="text-sm font-medium">{card.parked ? "Scene card (set aside)" : `Scene card ${number}`}</h2>
         <button
           type="button"
           onClick={onClose}
@@ -313,14 +336,25 @@ export function CardEditor({
               value={storyThread}
               onChange={(e) => setStoryThread(e.target.value)}
               list="story-thread-suggestions"
-              placeholder="A, B, C…"
+              maxLength={60}
+              placeholder="A, B, or a name"
               className={FIELD}
             />
             <datalist id="story-thread-suggestions">
-              <option value="A" />
-              <option value="B" />
-              <option value="C" />
+              {(storylines.length > 0 ? storylines : ["A", "B", "C"]).map((t) => (
+                <option key={t} value={t} />
+              ))}
             </datalist>
+            {card.storyThread && (
+              <button
+                type="button"
+                onClick={renameEverywhere}
+                disabled={isPending}
+                className="mt-1 text-xs text-neutral-500 underline underline-offset-2 hover:text-neutral-900 disabled:opacity-60 dark:hover:text-neutral-100"
+              >
+                Rename &ldquo;{card.storyThread}&rdquo; everywhere
+              </button>
+            )}
           </div>
           <div>
             <label htmlFor="card-act" className={LABEL}>
@@ -487,6 +521,22 @@ export function CardEditor({
             </div>
           </div>
         )}
+
+        <label className="flex cursor-pointer items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={parked}
+            onChange={(e) => setParked(e.target.checked)}
+            className="mt-1"
+          />
+          <span>
+            Set this scene aside
+            <span className="block text-xs text-neutral-500">
+              Greys it out and leaves it out of the counts, numbering and printouts. Nothing is
+              deleted; untick to bring it back.
+            </span>
+          </span>
+        </label>
 
         <div>
           <p className={LABEL}>Color</p>

@@ -95,12 +95,12 @@ function OutlineRow({
 
   return (
     <li
-      className={`flex gap-3 py-3 transition-opacity ${dimmed ? "opacity-30" : ""} ${
+      className={`flex gap-3 py-3 transition-opacity ${dimmed ? "opacity-30" : card.parked ? "opacity-50" : ""} ${
         active ? "bg-neutral-50 dark:bg-neutral-900" : ""
       }`}
     >
       <div className="flex w-8 shrink-0 flex-col items-end gap-1.5 pt-1.5">
-        <span className="text-xs font-medium tabular-nums text-neutral-500">{number}</span>
+        <span className="text-xs font-medium tabular-nums text-neutral-500">{card.parked ? "–" : number}</span>
         <span className="h-2 w-2 rounded-full" style={{ backgroundColor: swatchFor(card.colorTag) }} />
       </div>
       <div className="min-w-0 flex-1 space-y-0.5">

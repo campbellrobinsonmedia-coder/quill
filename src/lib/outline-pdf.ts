@@ -1,4 +1,5 @@
 import PDFDocument from "pdfkit";
+import { storylineName } from "@/lib/storyline";
 import type { ExportCard, OutlineExport } from "@/lib/outline-export";
 
 // Two printable versions of the Plan board: 3x5 index cards to cut out and pin
@@ -30,9 +31,16 @@ function drawCard(doc: PDFKit.PDFDocument, card: ExportCard, x: number, y: numbe
   const numberLabel = card.episode ? `${card.episode}.${card.number}` : String(card.number);
   const label = [numberLabel, card.heading ?? card.beat ?? ""].filter(Boolean).join("   ");
   doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#666666");
-  doc.text(label.toUpperCase(), innerX, top, { width: innerW - 24, height: 10, ellipsis: true, lineBreak: false });
-  if (card.storyThread) {
-    doc.text(card.storyThread.toUpperCase().slice(0, 3), innerX + innerW - 24, top, { width: 24, align: "right", lineBreak: false });
+  const thread = card.storyThread ? storylineName(card.storyThread).toUpperCase().slice(0, 14) : "";
+  const threadW = thread ? Math.ceil(doc.widthOfString(thread)) + 2 : 0;
+  doc.text(label.toUpperCase(), innerX, top, {
+    width: innerW - threadW - (thread ? 8 : 0),
+    height: 10,
+    ellipsis: true,
+    lineBreak: false,
+  });
+  if (thread) {
+    doc.text(thread, innerX + innerW - threadW, top, { width: threadW, align: "right", lineBreak: false });
   }
 
   // Title.

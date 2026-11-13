@@ -1,3 +1,4 @@
+import { storylineKey, storylineName } from "@/lib/storyline";
 // Season matrices: which storylines and which characters turn up in which
 // episodes, and where one drops out of the season.
 
@@ -78,10 +79,10 @@ export function buildThreadMatrix(episodes: MatrixEpisode[]): MatrixRow[] {
   const entries = new Map<string, { label: string; cells: string[][] }>();
   episodes.forEach((ep, col) => {
     for (const card of ep.cards) {
-      const key = card.storyThread?.trim().toUpperCase();
+      const key = storylineKey(card.storyThread);
       if (!key) continue;
       if (!entries.has(key)) {
-        entries.set(key, { label: key, cells: episodes.map(() => [] as string[]) });
+        entries.set(key, { label: storylineName(card.storyThread!), cells: episodes.map(() => [] as string[]) });
       }
       entries.get(key)!.cells[col].push(card.title);
     }

@@ -1,3 +1,4 @@
+import { PageHelp } from "@/components/page-help";
 import { prisma } from "@/lib/prisma";
 import { getSeriesOrNotFound } from "@/lib/get-series";
 import { NewCharacterForm } from "@/components/new-character-form";
@@ -40,6 +41,7 @@ export default async function SeriesBiblePage({
 
   return (
     <div className="flex flex-1 flex-col gap-10 p-4 sm:p-6">
+      <PageHelp id="series-bible" />
       <section className="space-y-4">
         <div>
           <h2 className="text-sm font-medium text-neutral-500">

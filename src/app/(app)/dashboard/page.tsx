@@ -1,3 +1,4 @@
+import { PageHelp } from "@/components/page-help";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
@@ -114,6 +115,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl flex-1 space-y-10 p-4 sm:p-6">
+      <PageHelp id="today" />
       {mostRecentDraft && (
         <section>
           <Link

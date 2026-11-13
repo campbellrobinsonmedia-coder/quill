@@ -1,3 +1,4 @@
+import { PageHelp } from "@/components/page-help";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
@@ -220,6 +221,7 @@ export default async function SearchPage({
 
   return (
     <div className="mx-auto w-full max-w-2xl flex-1 space-y-6 p-4 sm:p-6">
+      <PageHelp id="search" />
       <div className="space-y-1">
         <h1 className="text-lg font-semibold">Search</h1>
         <p className="text-sm text-neutral-500">

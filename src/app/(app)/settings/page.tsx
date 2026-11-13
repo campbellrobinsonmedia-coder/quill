@@ -1,3 +1,4 @@
+import { PageHelp } from "@/components/page-help";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { ChangePinForm } from "./change-pin-form";
@@ -28,6 +29,7 @@ export default async function SettingsPage() {
         <h1 className="text-lg font-semibold">Settings</h1>
         <p className="text-sm text-neutral-500">{user.email}</p>
       </div>
+      <PageHelp id="settings" />
 
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-neutral-500">Appearance</h2>

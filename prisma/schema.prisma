@@ -181,6 +181,9 @@ model Beat {
   title        String
   summary      String?
   order        Int
+  // Put away from a script's Plan board (and its counts and printouts) without
+  // deleting it; its scenes go with it. Only used on a project's own beats.
+  archived     Boolean       @default(false)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
@@ -294,6 +297,9 @@ model OutlineCard {
   turn          String?
   // "idea" | "started" | "written"; a linked scene with text counts as at least started.
   status        String   @default("idea")
+  // Set aside: greyed out on the board and left out of counts and printouts,
+  // but kept in place so it can be brought back.
+  parked        Boolean  @default(false)
   colorTag      String?
   act           String?
   location      String?

@@ -59,6 +59,7 @@ export function CommandPalette({ data }: { data: SidebarData }) {
       { id: "today", label: "Today", hint: "Go to", run: go("/dashboard") },
       { id: "inbox", label: "Idea inbox", hint: `${data.inboxCount} ideas`, run: go("/ideas") },
       { id: "search", label: "Search everything", hint: "Go to", run: go("/search") },
+      { id: "help", label: "Guide", hint: "How each page works", run: go("/help") },
       { id: "settings", label: "Settings", hint: "Go to", run: go("/settings") },
       {
         id: "new-idea",

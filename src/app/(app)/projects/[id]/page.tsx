@@ -1,3 +1,4 @@
+import { PageHelp } from "@/components/page-help";
 import { prisma } from "@/lib/prisma";
 import { getProjectOrNotFound } from "@/lib/get-project";
 import { PlanBoard } from "@/components/plan-board";
@@ -8,6 +9,7 @@ import {
   type DraftContent,
 } from "@/lib/draft-content";
 import { buildProgress, pageTargetFor } from "@/lib/plan-progress";
+import { withoutSetAside } from "@/lib/set-aside";
 import { episodeTargets } from "@/lib/card-move";
 import { findOrphanedCards, findUnlinkedScenes, isScriptInOrder } from "@/lib/scene-sync";
 import type { Metadata } from "next";
@@ -52,6 +54,7 @@ export default async function OutlinePage({
         summary: true,
         turn: true,
         status: true,
+        parked: true,
         colorTag: true,
         act: true,
         location: true,
@@ -82,6 +85,7 @@ export default async function OutlinePage({
         title: true,
         summary: true,
         order: true,
+        archived: true,
         references: {
           orderBy: { createdAt: "asc" },
           select: { id: true, kind: true, url: true, label: true, note: true, fileType: true },
@@ -115,6 +119,17 @@ export default async function OutlinePage({
       )
     : [];
 
+  // Archived beats leave the board with their scenes; they wait in a tray.
+  const archivedBeats = beats.filter((b) => b.archived);
+  const activeBeats = beats.filter((b) => !b.archived);
+  const archivedIds = new Set(archivedBeats.map((b) => b.id));
+  const boardCards = cards.filter((c) => !c.beatId || !archivedIds.has(c.beatId));
+  const archivedTray = archivedBeats.map((b) => ({
+    id: b.id,
+    title: b.title,
+    sceneCount: cards.filter((c) => c.beatId === b.id).length,
+  }));
+
   const availableScenes = draft
     ? listScenes(draft.content as unknown as DraftContent)
     : [];
@@ -138,19 +153,24 @@ export default async function OutlinePage({
 
   const isScreenplay = draftContent?.type === "screenplay";
   const progress = buildProgress({
-    cards,
+    cards: withoutSetAside(cards, archivedIds),
     scenes: draftContent?.type === "screenplay" ? estimateScenePages(draftContent.elements) : null,
-    beats,
+    beats: activeBeats,
     scriptPages: draftContent && isScreenplay ? estimatePageCount(draftContent) : null,
     target: isScreenplay ? pageTargetFor(project.formatTemplate, project.pageTarget) : null,
   });
 
   return (
-    <PlanBoard
+    <>
+      <div className="px-4 pt-4 sm:px-6">
+        <PageHelp id="plan" />
+      </div>
+      <PlanBoard
       key={id}
       projectId={id}
-      initialBeats={beats}
-      initialCards={cards}
+      initialBeats={activeBeats}
+      initialCards={boardCards}
+      archivedBeats={archivedTray}
       availableCharacters={characters}
       availableScenes={availableScenes}
       seasonBeats={seasonBeats}
@@ -159,5 +179,6 @@ export default async function OutlinePage({
       progress={progress}
       initialOpenCardId={cards.some((c) => c.id === openCard) ? openCard : null}
     />
+    </>
   );
 }

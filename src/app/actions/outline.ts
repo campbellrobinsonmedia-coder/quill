@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { normalizeOutlineOrder } from "@/lib/outline-order";
 import { isCardStatus } from "@/lib/plan-progress";
+import { storylineKey } from "@/lib/storyline";
 import { carryOverCharacters } from "@/lib/card-move";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -58,6 +59,7 @@ export async function updateCard(
     summary?: string;
     turn?: string | null;
     status?: string;
+    parked?: boolean;
     colorTag?: string | null;
     act?: string | null;
     location?: string | null;
@@ -176,6 +178,27 @@ export async function moveCardToEpisode(cardId: string, targetProjectId: string)
   return { droppedCharacters: dropped, hadScene: card.linkedSceneId !== null };
 }
 
+// Renames a storyline on every scene of the project that uses it (matched
+// ignoring case), so "B" can become "The heist" in one go.
+export async function renameStoryline(projectId: string, from: string, to: string) {
+  const userId = await requireUserId();
+  await assertOwnsProject(userId, projectId);
+  const fromKey = storylineKey(from);
+  const next = to.trim().replace(/\s+/g, " ").slice(0, 60);
+  if (!fromKey || !next) throw new Error("Give the storyline a name");
+
+  const cards = await prisma.outlineCard.findMany({
+    where: { projectId, storyThread: { not: null } },
+    select: { id: true, storyThread: true },
+  });
+  const ids = cards.filter((c) => storylineKey(c.storyThread) === fromKey).map((c) => c.id);
+  if (ids.length > 0) {
+    await prisma.outlineCard.updateMany({ where: { id: { in: ids } }, data: { storyThread: next } });
+  }
+  revalidatePath(`/projects/${projectId}`);
+  return { renamed: ids.length };
+}
+
 // Persists the whole Plan board in one go: beat order, which beat each scene
 // sits under, and the scenes' order within it. Every id is checked against
 // the project so a crafted request can't touch someone else's rows.
@@ -224,6 +247,8 @@ export async function saveOutlineLayout(
     }
   }
   await prisma.$transaction(updates);
+  // Scenes in archived beats aren't on the board, so renumber the whole story.
+  await normalizeOutlineOrder(projectId);
 
   revalidatePath(`/projects/${projectId}`);
 }

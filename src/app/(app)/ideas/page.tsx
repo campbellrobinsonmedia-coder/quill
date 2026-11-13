@@ -1,3 +1,4 @@
+import { PageHelp } from "@/components/page-help";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
@@ -126,6 +127,7 @@ export default async function IdeasPage({
 
   return (
     <div className="mx-auto w-full max-w-2xl flex-1 space-y-5 p-4 sm:p-6">
+      <PageHelp id="inbox" />
       <div className="space-y-1">
         <h1 className="text-lg font-semibold">
           {scope === "all" ? "All ideas" : "Idea inbox"}

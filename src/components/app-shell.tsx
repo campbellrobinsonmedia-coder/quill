@@ -129,6 +129,12 @@ export function AppShell({
             <SearchIcon />
           </button>
           <Link
+            href="/help"
+            className="hidden rounded-md px-3 py-2 text-neutral-600 hover:bg-neutral-100 sm:block dark:text-neutral-400 dark:hover:bg-neutral-800"
+          >
+            Guide
+          </Link>
+          <Link
             href="/settings"
             className="hidden rounded-md px-3 py-2 text-neutral-600 hover:bg-neutral-100 sm:block dark:text-neutral-400 dark:hover:bg-neutral-800"
           >
@@ -173,6 +179,9 @@ export function AppShell({
               <SidebarNav data={data} />
             </div>
             <div className="flex shrink-0 items-center justify-between gap-2 border-t border-neutral-200 p-3 text-sm dark:border-neutral-800">
+              <Link href="/help" className="rounded-md px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                Guide
+              </Link>
               <Link href="/settings" className="rounded-md px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800">
                 Settings
               </Link>

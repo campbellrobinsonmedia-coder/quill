@@ -1,3 +1,5 @@
+import { PageHelp } from "@/components/page-help";
+import { withoutSetAside } from "@/lib/set-aside";
 import Link from "next/link";
 import { getSeasonOrNotFound } from "@/lib/get-series";
 import { prisma } from "@/lib/prisma";
@@ -34,22 +36,26 @@ export default async function SeasonMatrixPage({
         select: {
           title: true,
           storyThread: true,
+          parked: true,
+          beatId: true,
           characters: { select: { id: true, name: true } },
         },
       },
+      beats: { where: { seasonId: null, seriesId: null, archived: true }, select: { id: true } },
     },
   });
 
   const matrixEpisodes = episodes.map((ep) => ({
     id: ep.id,
     number: ep.episodeNumber,
-    cards: ep.outlineCards,
+    cards: withoutSetAside(ep.outlineCards, new Set(ep.beats.map((b) => b.id))),
   }));
   const rows = byCharacters ? buildCharacterMatrix(matrixEpisodes) : buildThreadMatrix(matrixEpisodes);
   const flagged = rows.filter((r) => r.flags.length > 0);
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
+      <PageHelp id="season-threads" />
       <div className="flex items-center gap-2 text-sm">
         <Link
           href={`/series/${id}/seasons/${seasonId}`}

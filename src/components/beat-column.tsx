@@ -4,7 +4,8 @@ import { useState, useTransition } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { updateBeat, deleteBeat } from "@/app/actions/beats";
+import { updateBeat, deleteBeat, setBeatArchived } from "@/app/actions/beats";
+import { Menu, MENU_ITEM } from "@/components/menu";
 import { createCard } from "@/app/actions/outline";
 import { ReferenceList, type ReferenceData } from "@/components/reference-list";
 import { useToast } from "@/components/toast";
@@ -143,6 +144,30 @@ export function BeatColumn({
     });
   }
 
+  function archive() {
+    startTransition(async () => {
+      try {
+        await setBeatArchived(beat.id, true);
+        toast.success("Beat archived. Find it under Archived beats, below the board");
+      } catch {
+        toast.error("Couldn't archive the beat — try again");
+      }
+    });
+  }
+
+  function remove() {
+    const scenes = count > 0 ? ` Its ${count} scene${count === 1 ? "" : "s"} move to Unplanned.` : "";
+    if (!window.confirm(`Delete this beat?${scenes} To keep it for later, archive it instead.`)) return;
+    startTransition(async () => {
+      try {
+        await deleteBeat(beat.id);
+        toast.success("Beat deleted");
+      } catch {
+        toast.error("Couldn't delete — try again");
+      }
+    });
+  }
+
   return (
     <section ref={setNodeRef} style={style} className={`${SHELL} sm:w-72 sm:shrink-0`}>
       <header className="space-y-1.5 px-3 pt-3">
@@ -174,6 +199,22 @@ export function BeatColumn({
             </button>
           )}
           <span className="mt-1 shrink-0 text-xs tabular-nums text-neutral-500">{count}</span>
+          <Menu
+            label="⋯"
+            buttonClassName="inline-flex h-7 items-center rounded px-1.5 text-sm text-neutral-500 hover:bg-neutral-200 dark:hover:bg-neutral-800"
+          >
+            <button type="button" className={MENU_ITEM} onClick={() => setEditing(true)}>
+              Edit title and summary
+            </button>
+            <button type="button" className={MENU_ITEM} onClick={archive}>
+              Archive beat
+              <span className="block text-xs text-neutral-500">Put it away with its scenes</span>
+            </button>
+            <button type="button" className={`${MENU_ITEM} text-red-600 dark:text-red-400`} onClick={remove}>
+              Delete beat
+              <span className="block text-xs text-neutral-500">Its scenes move to Unplanned</span>
+            </button>
+          </Menu>
         </div>
 
         {editing ? (
@@ -188,17 +229,7 @@ export function BeatColumn({
             <div className="flex justify-between gap-2">
               <button
                 type="button"
-                onClick={() => {
-                  if (!window.confirm("Delete this beat? Its scenes move to Unplanned.")) return;
-                  startTransition(async () => {
-                    try {
-                      await deleteBeat(beat.id);
-                      toast.success("Beat deleted");
-                    } catch {
-                      toast.error("Couldn't delete — try again");
-                    }
-                  });
-                }}
+                onClick={remove}
                 className="text-xs text-neutral-500 hover:text-red-600"
               >
                 Delete

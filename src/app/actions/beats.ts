@@ -212,6 +212,26 @@ export async function deleteBeat(beatId: string) {
   });
 }
 
+// Puts a beat of a script's own Plan board away (or brings it back) without
+// deleting it. Its scenes go with it and wait there; a restored beat returns at
+// the end of the board.
+export async function setBeatArchived(beatId: string, archived: boolean) {
+  const userId = await requireUserId();
+  const beat = await getOwnedBeat(userId, beatId);
+  if (!beat.projectId || beat.seasonId || beat.seriesId) {
+    throw new Error("Only a script's own beats can be archived");
+  }
+
+  await prisma.beat.update({
+    where: { id: beatId },
+    data: archived
+      ? { archived: true }
+      : { archived: false, order: await nextOrder({ projectId: beat.projectId, seasonId: null, seriesId: null }) },
+  });
+  await normalizeOutlineOrder(beat.projectId);
+  revalidatePath(`/projects/${beat.projectId}`);
+}
+
 export async function reorderBeats(
   scope: { seriesId?: string; seasonId?: string; projectId?: string },
   orderedIds: string[]
