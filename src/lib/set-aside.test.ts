@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isSetAside, withoutSetAside } from "@/lib/set-aside";
+import { isSetAside, openGaps, withoutSetAside } from "@/lib/set-aside";
 import { buildLayout, cardNumbers } from "@/lib/plan-layout";
 import { buildOutlineExport } from "@/lib/outline-export";
 import { episodeRollup } from "@/lib/season-rollup";
@@ -30,6 +30,24 @@ describe("set aside", () => {
     expect(withoutSetAside([{ parked: true }, { parked: false }])).toHaveLength(1);
   });
 
+  it("doesn't count a gap as a scene, and lists the open ones", () => {
+    expect(isSetAside({ gap: true })).toBe(true);
+    const gaps = openGaps(
+      [
+        { id: "a", title: "Need the reveal", gap: true, beatId: "b1" },
+        { id: "b", title: "Parked gap", gap: true, parked: true, beatId: null },
+        { id: "c", title: "In archived beat", gap: true, beatId: "b2" },
+        { id: "d", title: "Normal", gap: false, beatId: null },
+      ],
+      [
+        { id: "b1", title: "Midpoint", gap: false },
+        { id: "b2", title: "Old", archived: true },
+        { id: "b3", title: "Act three", gap: true },
+      ]
+    );
+    expect(gaps.map((g) => `${g.kind}:${g.title}`)).toEqual(["beat:Act three", "scene:Need the reveal"]);
+  });
+
   it("numbers the remaining scenes without gaps", () => {
     const layout = buildLayout([], [c("a", 0, null), c("b", 1, null), c("c", 2, null)]);
     const numbers = cardNumbers(layout, new Set(["b"]));
@@ -56,10 +74,32 @@ describe("set aside", () => {
     expect(data.groups.map((g) => g.label)).toEqual(["Setup"]);
   });
 
+  it("lists gaps at the end of the outline instead of numbering them", () => {
+    const data = buildOutlineExport({
+      title: "T",
+      logline: null,
+      author: null,
+      format: "Feature",
+      beats: [
+        { id: "b1", title: "Setup", summary: null, order: 0 },
+        { id: "b3", title: "Midpoint", summary: null, order: 1, gap: true },
+      ],
+      cards: [c("a", 0, "b1"), c("g", 1, "b1", { gap: true, title: "Need the reveal" })],
+      sceneLabels: {},
+    });
+    expect(data.cards.map((x) => x.title)).toEqual(["Scene a"]);
+    expect(data.gaps).toEqual([
+      { where: "Beat", title: "Midpoint", kind: "beat" },
+      { where: "Setup", title: "Need the reveal", kind: "scene" },
+    ]);
+  });
+
   it("doesn't count them in an episode's progress", () => {
     const base = { formatTemplate: "tv-pilot-hour", pageTarget: null, draftContent: null };
     const cards = [c("a", 0, "b1"), c("b", 1, "b1", { parked: true }), c("c", 2, "b2")];
     expect(episodeRollup({ ...base, cards }).total).toBe(2);
     expect(episodeRollup({ ...base, cards, archivedBeatIds: new Set(["b2"]) }).total).toBe(1);
+    const withGap = [...cards, c("g", 3, "b1", { gap: true })];
+    expect(episodeRollup({ ...base, cards: withGap, gapBeats: 1 })).toMatchObject({ total: 2, gaps: 2 });
   });
 });

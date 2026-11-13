@@ -7,6 +7,7 @@ const roll = (total: number, written: number, started: number, pages: number | n
   counts: { written, started, idea: total - written - started },
   scriptPages: pages,
   target,
+  gaps: 0,
 });
 
 describe("episodeRollup", () => {
@@ -49,6 +50,7 @@ describe("seasonTotals", () => {
       started: 3,
       idea: 8,
       pages: 42.3,
+      gaps: 0,
       target: 110,
     });
   });

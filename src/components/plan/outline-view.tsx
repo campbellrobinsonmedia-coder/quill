@@ -100,7 +100,7 @@ function OutlineRow({
       }`}
     >
       <div className="flex w-8 shrink-0 flex-col items-end gap-1.5 pt-1.5">
-        <span className="text-xs font-medium tabular-nums text-neutral-500">{card.parked ? "–" : number}</span>
+        <span className="text-xs font-medium tabular-nums text-neutral-500">{card.gap ? "?" : card.parked ? "–" : number}</span>
         <span className="h-2 w-2 rounded-full" style={{ backgroundColor: swatchFor(card.colorTag) }} />
       </div>
       <div className="min-w-0 flex-1 space-y-0.5">

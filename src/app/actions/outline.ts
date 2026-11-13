@@ -25,7 +25,12 @@ async function assertBeatInProject(beatId: string, projectId: string) {
   if (!beat) throw new Error("Beat not found in this project");
 }
 
-export async function createCard(projectId: string, title: string, beatId?: string | null) {
+export async function createCard(
+  projectId: string,
+  title: string,
+  beatId?: string | null,
+  options: { gap?: boolean } = {}
+) {
   const userId = await requireUserId();
   await assertOwnsProject(userId, projectId);
   if (beatId) await assertBeatInProject(beatId, projectId);
@@ -44,6 +49,7 @@ export async function createCard(projectId: string, title: string, beatId?: stri
       projectId,
       title: trimmed,
       beatId: beatId || null,
+      gap: options.gap === true,
       order: (last?.order ?? -1) + 1,
     },
   });
@@ -60,6 +66,7 @@ export async function updateCard(
     turn?: string | null;
     status?: string;
     parked?: boolean;
+    gap?: boolean;
     colorTag?: string | null;
     act?: string | null;
     location?: string | null;

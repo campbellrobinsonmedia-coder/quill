@@ -37,6 +37,7 @@ export default async function SeasonMatrixPage({
           title: true,
           storyThread: true,
           parked: true,
+          gap: true,
           beatId: true,
           characters: { select: { id: true, name: true } },
         },
@@ -55,7 +56,6 @@ export default async function SeasonMatrixPage({
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
-      <PageHelp id="season-threads" />
       <div className="flex items-center gap-2 text-sm">
         <Link
           href={`/series/${id}/seasons/${seasonId}`}
@@ -175,6 +175,8 @@ export default async function SeasonMatrixPage({
           </div>
         </>
       )}
+
+      <PageHelp id="season-threads" />
     </div>
   );
 }

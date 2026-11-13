@@ -55,6 +55,7 @@ export default async function OutlinePage({
         turn: true,
         status: true,
         parked: true,
+        gap: true,
         colorTag: true,
         act: true,
         location: true,
@@ -86,6 +87,7 @@ export default async function OutlinePage({
         summary: true,
         order: true,
         archived: true,
+        gap: true,
         references: {
           orderBy: { createdAt: "asc" },
           select: { id: true, kind: true, url: true, label: true, note: true, fileType: true },
@@ -162,9 +164,6 @@ export default async function OutlinePage({
 
   return (
     <>
-      <div className="px-4 pt-4 sm:px-6">
-        <PageHelp id="plan" />
-      </div>
       <PlanBoard
       key={id}
       projectId={id}
@@ -179,6 +178,9 @@ export default async function OutlinePage({
       progress={progress}
       initialOpenCardId={cards.some((c) => c.id === openCard) ? openCard : null}
     />
+      <div className="px-4 pb-6 sm:px-6">
+        <PageHelp id="plan" />
+      </div>
     </>
   );
 }

@@ -1,7 +1,7 @@
 import { cardHeading } from "@/lib/card-face";
 import { swatchFor } from "@/lib/outline-colors";
 import { buildLayout, cardNumbers, UNPLANNED } from "@/lib/plan-layout";
-import { withoutSetAside } from "@/lib/set-aside";
+import { openGaps, withoutSetAside } from "@/lib/set-aside";
 
 // The Plan board as plain data for the printable PDFs (index cards, outline).
 
@@ -44,6 +44,8 @@ export type OutlineExport = {
   format: string;
   /** Every card in story order. */
   cards: ExportCard[];
+  /** Placeholders still to be filled in: scenes and beats marked as gaps. */
+  gaps: { where: string; title: string; kind: "scene" | "beat" }[];
   /** The same cards grouped under their beats (unplanned first). */
   groups: { key: string; label: string; summary: string; cards: ExportCard[] }[];
 };
@@ -60,6 +62,7 @@ type SourceCard = {
   beatId: string | null;
   order: number;
   parked?: boolean;
+  gap?: boolean;
   characters: { name: string }[];
 };
 
@@ -68,13 +71,19 @@ export function buildOutlineExport(input: {
   logline: string | null;
   author: string | null;
   format: string;
-  beats: { id: string; title: string; summary: string | null; order: number; archived?: boolean }[];
+  beats: { id: string; title: string; summary: string | null; order: number; archived?: boolean; gap?: boolean }[];
   cards: SourceCard[];
   /** scene heading id -> label like "3. INT. ATTIC - DAY" */
   sceneLabels: Record<string, string>;
 }): OutlineExport {
   // Scenes set aside, and archived beats with their scenes, aren't printed.
   const archivedBeatIds = new Set(input.beats.filter((b) => b.archived).map((b) => b.id));
+  const beatTitle = new Map(input.beats.map((b) => [b.id, pdfSafe(b.title) || "Beat"]));
+  const gaps = openGaps(input.cards, input.beats).map((g) => ({
+    where: g.kind === "beat" ? "Beat" : g.beatId ? (beatTitle.get(g.beatId) ?? "Beat") : "Unplanned",
+    title: pdfSafe(g.title) || "Untitled",
+    kind: g.kind,
+  }));
   input = {
     ...input,
     beats: input.beats.filter((b) => !b.archived),
@@ -131,6 +140,7 @@ export function buildOutlineExport(input: {
     author: pdfSafe(input.author),
     format: pdfSafe(input.format),
     cards: groups.flatMap((g) => g.cards),
+    gaps,
     groups,
   };
 }
@@ -152,7 +162,7 @@ export function buildSeasonExport(input: {
     title: string;
     logline: string | null;
     format: string;
-    beats: { id: string; title: string; summary: string | null; order: number; archived?: boolean }[];
+    beats: { id: string; title: string; summary: string | null; order: number; archived?: boolean; gap?: boolean }[];
     cards: SourceCard[];
     sceneLabels: Record<string, string>;
   }[];

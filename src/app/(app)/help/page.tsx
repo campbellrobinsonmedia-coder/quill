@@ -10,7 +10,7 @@ export default function HelpPage() {
         <h1 className="text-lg font-semibold">Guide</h1>
         <p className="text-sm text-neutral-500">
           What each page is for and how it works. Every page also has a &ldquo;How this page
-          works&rdquo; note at the top.
+          works&rdquo; note at the bottom.
         </p>
       </div>
 

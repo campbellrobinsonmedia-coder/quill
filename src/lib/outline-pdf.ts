@@ -140,6 +140,10 @@ const MARGIN = 54;
 const OUTLINE_W = PAGE_W - MARGIN * 2;
 const OUTLINE_SIZES = [10.5, 10, 9.5, 9, 8.5, 8, 7.5, 7];
 
+function gapLine(gap: OutlineExport["gaps"][number]) {
+  return gap.kind === "beat" ? `Beat: ${gap.title}` : `${gap.where}: ${gap.title}`;
+}
+
 function sceneParagraph(card: ExportCard) {
   const lead = `${card.number}. ${card.heading ? `${card.heading} - ` : ""}${card.title}. `;
   const rest = [card.summary.replace(/\n+/g, " "), card.turn ? `Turn: ${card.turn}` : ""]
@@ -163,6 +167,13 @@ function outlineHeight(doc: PDFKit.PDFDocument, data: OutlineExport, size: numbe
     }
     h += size * 0.5;
   }
+  if (data.gaps.length > 0) {
+    doc.font("Helvetica-Bold").fontSize(size + 1);
+    h += doc.heightOfString("STILL TO FILL", { width: OUTLINE_W }) + size * 0.6;
+    for (const gap of data.gaps) {
+      h += doc.heightOfString(gapLine(gap), { width: OUTLINE_W - 14 }) + size * 0.35;
+    }
+  }
   return h;
 }
 
@@ -178,7 +189,7 @@ function drawOutline(doc: PDFKit.PDFDocument, data: OutlineExport) {
   }
   doc.moveDown(0.8);
 
-  if (data.cards.length === 0) {
+  if (data.cards.length === 0 && data.gaps.length === 0) {
     doc.font("Helvetica").fontSize(11).fillColor("#555555").text("No scene cards yet.", MARGIN, doc.y, { width: OUTLINE_W });
     return;
   }
@@ -196,6 +207,16 @@ function drawOutline(doc: PDFKit.PDFDocument, data: OutlineExport) {
       doc.moveDown(0.25);
     }
     doc.moveDown(0.4);
+    doc.x = MARGIN;
+  }
+
+  if (data.gaps.length > 0) {
+    doc.font("Helvetica-Bold").fontSize(size + 1).fillColor("#000000").text("STILL TO FILL", MARGIN, doc.y, { width: OUTLINE_W });
+    doc.moveDown(0.2);
+    for (const gap of data.gaps) {
+      doc.font("Helvetica-Oblique").fontSize(size).fillColor("#444444").text(gapLine(gap), MARGIN + 14, doc.y, { width: OUTLINE_W - 14 });
+      doc.moveDown(0.25);
+    }
     doc.x = MARGIN;
   }
 }

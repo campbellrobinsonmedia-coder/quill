@@ -42,6 +42,8 @@ import { OutlineView } from "@/components/plan/outline-view";
 import { ProgressPanel } from "@/components/plan/progress-panel";
 import type { PlanProgress } from "@/lib/plan-progress";
 import type { EpisodeTarget } from "@/lib/card-move";
+import { GapsPanel } from "@/components/plan/gaps-panel";
+import { openGaps } from "@/lib/set-aside";
 import { ArchivedBeats, type ArchivedBeat } from "@/components/plan/archived-beats";
 import { createProjectBeat, applyBeatTemplate, reorderBeats } from "@/app/actions/beats";
 import { createCard, saveOutlineLayout } from "@/app/actions/outline";
@@ -163,7 +165,7 @@ export function PlanBoard({
   const cardsById = new Map(initialCards.map((c) => [c.id, c]));
   const numbers = cardNumbers(
     layout,
-    new Set(initialCards.filter((c) => c.parked).map((c) => c.id))
+    new Set(initialCards.filter((c) => c.parked || c.gap).map((c) => c.id))
   );
   const beatOptions = layout.beatIds.map((id) => ({ id, title: beatsById.get(id)?.title ?? "Beat" }));
 
@@ -189,7 +191,10 @@ export function PlanBoard({
   const [filter, setFilter] = useState<CardFilter | null>(null);
   const options = filterOptions(initialCards);
   const hasOptions =
-    options.characters.length > 0 || options.threads.length > 0 || options.locations.length > 0;
+    options.characters.length > 0 ||
+    options.threads.length > 0 ||
+    options.locations.length > 0 ||
+    initialCards.some((c) => c.gap);
   const matches = (card: OutlineCardData) => matchesFilter(card, filter);
 
   const sensors = useSensors(
@@ -482,6 +487,7 @@ export function PlanBoard({
               className="max-w-48 rounded-md border border-neutral-300 bg-transparent px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900"
             >
               <option value="">Nothing</option>
+              {initialCards.some((c) => c.gap) && <option value="gap:">Gaps to fill</option>}
               {options.characters.length > 0 && (
                 <optgroup label="Character">
                   {options.characters.map((c) => (
@@ -522,6 +528,12 @@ export function PlanBoard({
           </div>
         )}
       </div>
+
+      <GapsPanel
+        gaps={openGaps(initialCards, initialBeats)}
+        beatTitleOf={(id) => beatsById.get(id)?.title}
+        onOpenCard={setOpenCardId}
+      />
 
       {sync && (sync.unlinkedScenes > 0 || sync.scriptOutOfOrder) && (
         <ScriptSyncBar projectId={projectId} sync={sync} />

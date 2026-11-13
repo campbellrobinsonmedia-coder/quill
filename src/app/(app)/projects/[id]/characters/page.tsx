@@ -65,7 +65,6 @@ export default async function CharactersPage({
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
-      <PageHelp id="characters" />
       {season && (
         <p className="text-xs text-neutral-500">
           Recurring/season-wide characters live in the{" "}
@@ -104,6 +103,8 @@ export default async function CharactersPage({
           ))}
         </div>
       )}
+
+      <PageHelp id="characters" />
     </div>
   );
 }

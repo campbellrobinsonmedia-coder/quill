@@ -14,6 +14,8 @@ export type EpisodeRollup = {
   counts: Record<CardStatus, number>;
   scriptPages: number | null;
   target: number | null;
+  /** Scene and beat placeholders still to be filled in. */
+  gaps: number;
 };
 
 export function episodeRollup(episode: {
@@ -25,9 +27,12 @@ export function episodeRollup(episode: {
     linkedSceneId: string | null;
     beatId: string | null;
     parked?: boolean;
+    gap?: boolean;
   }[];
   /** The episode's archived beats; their scenes don't count. */
   archivedBeatIds?: ReadonlySet<string>;
+  /** Beats on the episode's Plan board marked as gaps. */
+  gapBeats?: number;
   draftContent: DraftContent | null;
 }): EpisodeRollup {
   const screenplay = episode.draftContent?.type === "screenplay" ? episode.draftContent : null;
@@ -43,6 +48,11 @@ export function episodeRollup(episode: {
     counts: progress.counts,
     scriptPages: progress.scriptPages,
     target: progress.target,
+    gaps:
+      (episode.gapBeats ?? 0) +
+      episode.cards.filter(
+        (c) => c.gap && !c.parked && !(c.beatId && episode.archivedBeatIds?.has(c.beatId))
+      ).length,
   };
 }
 
@@ -53,6 +63,7 @@ export type SeasonTotals = {
   started: number;
   idea: number;
   pages: number;
+  gaps: number;
   /** Sum of the episodes' page targets (episodes without one add nothing). */
   target: number;
 };
@@ -65,10 +76,12 @@ export function seasonTotals(rollups: EpisodeRollup[]): SeasonTotals {
     started: 0,
     idea: 0,
     pages: 0,
+    gaps: 0,
     target: 0,
   };
   for (const r of rollups) {
     totals.scenes += r.total;
+    totals.gaps += r.gaps;
     totals.written += r.counts.written;
     totals.started += r.counts.started;
     totals.idea += r.counts.idea;

@@ -4,9 +4,11 @@
 export type CardFilter =
   | { kind: "character"; value: string } // character id
   | { kind: "thread"; value: string } // storyline label
-  | { kind: "location"; value: string }; // location, case-insensitive
+  | { kind: "location"; value: string } // location, case-insensitive
+  | { kind: "gap" }; // gaps still to be filled
 
 type FilterableCard = {
+  gap?: boolean;
   storyThread: string | null;
   location: string | null;
   characters: { id: string }[];
@@ -23,6 +25,8 @@ export function matchesFilter(card: FilterableCard, filter: CardFilter | null): 
       return norm(card.storyThread) === norm(filter.value);
     case "location":
       return norm(card.location) === norm(filter.value);
+    case "gap":
+      return !!card.gap;
   }
 }
 
@@ -58,10 +62,12 @@ export function filterOptions(
 
 // Encodes a filter for a <select> value, e.g. "character:abc123".
 export function encodeFilter(filter: CardFilter | null): string {
-  return filter ? `${filter.kind}:${filter.value}` : "";
+  if (!filter) return "";
+  return filter.kind === "gap" ? "gap:" : `${filter.kind}:${filter.value}`;
 }
 
 export function decodeFilter(value: string): CardFilter | null {
+  if (value === "gap:") return { kind: "gap" };
   const i = value.indexOf(":");
   if (i < 0) return null;
   const kind = value.slice(0, i);

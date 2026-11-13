@@ -17,6 +17,7 @@ export type OutlineCardData = {
   turn: string | null;
   status: string;
   parked: boolean;
+  gap: boolean;
   colorTag: string | null;
   act: string | null;
   location: string | null;
@@ -69,11 +70,12 @@ export function OutlineCard({
     opacity: isDragging ? 0.5 : dimmed ? 0.3 : card.parked ? 0.55 : 1,
   };
 
-  // Greys the scene out (or brings it back) without opening the panel.
+  // Greys the scene out (or brings it back), or marks a gap as filled, without
+  // opening the panel.
   function toggleAside() {
     startAside(async () => {
       try {
-        await updateCard(card.id, { parked: !card.parked });
+        await updateCard(card.id, card.gap ? { gap: false } : { parked: !card.parked });
       } catch {
         toast.error("Couldn't update the scene — try again");
       }
@@ -101,7 +103,7 @@ export function OutlineCard({
         }
       }}
       className={`group flex w-full cursor-pointer flex-col gap-1.5 rounded-md border bg-white p-3 text-left shadow-sm transition-shadow hover:shadow-md dark:bg-neutral-900 ${
-        card.parked ? "border-dashed" : ""
+        card.gap ? "border-dashed border-amber-400 dark:border-amber-600" : card.parked ? "border-dashed" : ""
       } ${
         active
           ? "border-neutral-900 ring-1 ring-neutral-900 dark:border-white dark:ring-white"
@@ -110,7 +112,7 @@ export function OutlineCard({
     >
       <div className="flex items-center gap-1.5">
         <span className="shrink-0 text-xs font-medium tabular-nums text-neutral-500 dark:text-neutral-400">
-          {card.parked ? "–" : number}
+          {card.gap ? "?" : card.parked ? "–" : number}
         </span>
         <div
           {...attributes}
@@ -142,20 +144,31 @@ export function OutlineCard({
             e.stopPropagation();
             toggleAside();
           }}
-          title={card.parked ? "Bring this scene back" : "Set aside: grey it out without deleting it"}
+          title={
+            card.gap
+              ? "Mark as filled: make it a normal scene"
+              : card.parked
+                ? "Bring this scene back"
+                : "Set aside: grey it out without deleting it"
+          }
           className={`shrink-0 rounded px-1 py-0.5 text-[10px] text-neutral-500 underline underline-offset-2 hover:text-neutral-900 disabled:opacity-60 dark:hover:text-neutral-100 ${
-            card.parked
+            card.parked || card.gap
               ? ""
               : "sm:opacity-0 sm:transition-opacity sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
           }`}
         >
-          {card.parked ? "Bring back" : "Set aside"}
+          {card.gap ? "Mark filled" : card.parked ? "Bring back" : "Set aside"}
         </button>
       </div>
 
       {beatTitle && (
         <p className="truncate text-[10px] font-medium uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
           {beatTitle}
+        </p>
+      )}
+      {card.gap && (
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+          Gap to fill
         </p>
       )}
       <p className={`text-sm font-medium leading-snug ${card.parked ? "line-through decoration-neutral-400" : ""}`}>

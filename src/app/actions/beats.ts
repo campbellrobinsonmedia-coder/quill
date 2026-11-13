@@ -232,6 +232,18 @@ export async function setBeatArchived(beatId: string, archived: boolean) {
   revalidatePath(`/projects/${beat.projectId}`);
 }
 
+// Marks a beat of a script's own Plan board as a gap (a placeholder for a beat
+// still to be worked out), or clears the mark once it's filled in.
+export async function setBeatGap(beatId: string, gap: boolean) {
+  const userId = await requireUserId();
+  const beat = await getOwnedBeat(userId, beatId);
+  if (!beat.projectId || beat.seasonId || beat.seriesId) {
+    throw new Error("Only a script's own beats can be marked as gaps");
+  }
+  await prisma.beat.update({ where: { id: beatId }, data: { gap } });
+  revalidatePath(`/projects/${beat.projectId}`);
+}
+
 export async function reorderBeats(
   scope: { seriesId?: string; seasonId?: string; projectId?: string },
   orderedIds: string[]

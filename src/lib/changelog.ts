@@ -340,13 +340,21 @@ export const CHANGELOG: ChangelogRelease[] = [
       "A Guide (top bar) explains every page, and each page has a collapsed \"How this page works\" note",
     ],
   },
+  {
+    version: "v34",
+    title: "Gaps to fill",
+    items: [
+      "Mark a scene or a beat as a gap: a placeholder for something you know is missing but can't write yet. Add one with \"+ Gap\" next to a column's scene box, or tick it on a card, or \"Mark as a gap\" in a beat's menu",
+      "Gaps are flagged, listed above the board, available under Highlight, left out of scene counts and numbering, shown on the season page (per episode and in total), and listed at the end of the outline printout",
+      "The \"How this page works\" notes moved to the bottom of each page",
+    ],
+  },
 ];
 
 // Not built yet — discussed and agreed as direction, not a fixed commitment.
 export const ROADMAP: string[] = [
   "Wire episode credits into the actual PDF / Fountain / FDX export output",
   "Backup as a zipped FDX + Fountain bundle, and embedding uploaded files (JSON backup and restore exist today)",
-  "Air order vs. production order for episodes",
   "Offline-first drafting (local queue, sync on reconnect)",
   "Sign out of all devices (and a session list), plus step-up checks before sensitive changes",
   "Read-only, watermarked share links for sending drafts to collaborators",

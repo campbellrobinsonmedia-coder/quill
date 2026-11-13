@@ -184,6 +184,8 @@ model Beat {
   // Put away from a script's Plan board (and its counts and printouts) without
   // deleting it; its scenes go with it. Only used on a project's own beats.
   archived     Boolean       @default(false)
+  // A placeholder for a beat still to be worked out.
+  gap          Boolean       @default(false)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
@@ -300,6 +302,9 @@ model OutlineCard {
   // Set aside: greyed out on the board and left out of counts and printouts,
   // but kept in place so it can be brought back.
   parked        Boolean  @default(false)
+  // A placeholder for a scene still to be found: shown flagged, listed as
+  // something to fill, and not counted as a scene yet.
+  gap           Boolean  @default(false)
   colorTag      String?
   act           String?
   location      String?

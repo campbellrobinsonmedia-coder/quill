@@ -39,7 +39,6 @@ export default async function ReportsPage({
 
   return (
     <div className="flex flex-1 flex-col gap-10 p-4 sm:p-6">
-      <PageHelp id="review" />
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-neutral-500">
           Characters ({characterRows.length})
@@ -152,6 +151,8 @@ export default async function ReportsPage({
           </table>
         </div>
       </section>
+
+      <PageHelp id="review" />
     </div>
   );
 }

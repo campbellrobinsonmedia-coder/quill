@@ -29,7 +29,6 @@ export default async function SettingsPage() {
         <h1 className="text-lg font-semibold">Settings</h1>
         <p className="text-sm text-neutral-500">{user.email}</p>
       </div>
-      <PageHelp id="settings" />
 
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-neutral-500">Appearance</h2>
@@ -120,6 +119,8 @@ export default async function SettingsPage() {
           ))}
         </ol>
       </section>
+
+      <PageHelp id="settings" />
     </div>
   );
 }

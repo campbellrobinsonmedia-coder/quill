@@ -41,7 +41,6 @@ export default async function SeriesBiblePage({
 
   return (
     <div className="flex flex-1 flex-col gap-10 p-4 sm:p-6">
-      <PageHelp id="series-bible" />
       <section className="space-y-4">
         <div>
           <h2 className="text-sm font-medium text-neutral-500">
@@ -87,6 +86,8 @@ export default async function SeriesBiblePage({
           </div>
         )}
       </section>
+
+      <PageHelp id="series-bible" />
     </div>
   );
 }

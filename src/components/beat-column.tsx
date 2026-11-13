@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { updateBeat, deleteBeat, setBeatArchived } from "@/app/actions/beats";
+import { updateBeat, deleteBeat, setBeatArchived, setBeatGap } from "@/app/actions/beats";
 import { Menu, MENU_ITEM } from "@/components/menu";
 import { createCard } from "@/app/actions/outline";
 import { ReferenceList, type ReferenceData } from "@/components/reference-list";
@@ -14,6 +14,8 @@ export type PlanBeat = {
   id: string;
   title: string;
   summary: string | null;
+  /** A placeholder for a beat still to be worked out. */
+  gap?: boolean;
   references: ReferenceData[];
 };
 
@@ -28,20 +30,24 @@ function AddScene({
   const [isPending, startTransition] = useTransition();
   const toast = useToast();
 
+  function add(gap: boolean) {
+    const title = value.trim();
+    if (!title) return;
+    setValue("");
+    startTransition(async () => {
+      try {
+        await createCard(projectId, title, beatId, { gap });
+      } catch {
+        toast.error("Couldn't add that — try again");
+      }
+    });
+  }
+
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        const title = value.trim();
-        if (!title) return;
-        setValue("");
-        startTransition(async () => {
-          try {
-            await createCard(projectId, title, beatId);
-          } catch {
-            toast.error("Couldn't add that scene — try again");
-          }
-        });
+        add(false);
       }}
       className="flex gap-1.5 p-2 pt-0"
     >
@@ -53,6 +59,17 @@ function AddScene({
         disabled={isPending}
         className="min-w-0 flex-1 rounded border border-neutral-300 bg-white px-2 py-1.5 text-xs outline-none focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900"
       />
+      {value.trim() && (
+        <button
+          type="button"
+          onClick={() => add(true)}
+          disabled={isPending}
+          title="Add it as a gap: a placeholder for a scene still to be found"
+          className="shrink-0 rounded border border-amber-300 px-2 text-xs text-amber-800 hover:bg-amber-50 disabled:opacity-60 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-950/40"
+        >
+          + Gap
+        </button>
+      )}
     </form>
   );
 }
@@ -155,6 +172,16 @@ export function BeatColumn({
     });
   }
 
+  function toggleGap() {
+    startTransition(async () => {
+      try {
+        await setBeatGap(beat.id, !beat.gap);
+      } catch {
+        toast.error("Couldn't update the beat — try again");
+      }
+    });
+  }
+
   function remove() {
     const scenes = count > 0 ? ` Its ${count} scene${count === 1 ? "" : "s"} move to Unplanned.` : "";
     if (!window.confirm(`Delete this beat?${scenes} To keep it for later, archive it instead.`)) return;
@@ -196,6 +223,11 @@ export function BeatColumn({
               className="min-w-0 flex-1 text-left"
             >
               <h3 className="text-sm font-semibold">{beat.title}</h3>
+              {beat.gap && (
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+                  Gap to fill
+                </span>
+              )}
             </button>
           )}
           <span className="mt-1 shrink-0 text-xs tabular-nums text-neutral-500">{count}</span>
@@ -205,6 +237,12 @@ export function BeatColumn({
           >
             <button type="button" className={MENU_ITEM} onClick={() => setEditing(true)}>
               Edit title and summary
+            </button>
+            <button type="button" className={MENU_ITEM} onClick={toggleGap}>
+              {beat.gap ? "Mark as filled" : "Mark as a gap"}
+              <span className="block text-xs text-neutral-500">
+                {beat.gap ? "It's worked out now" : "Still to be worked out"}
+              </span>
             </button>
             <button type="button" className={MENU_ITEM} onClick={archive}>
               Archive beat

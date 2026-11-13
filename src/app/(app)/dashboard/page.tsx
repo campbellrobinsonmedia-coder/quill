@@ -115,7 +115,6 @@ export default async function DashboardPage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl flex-1 space-y-10 p-4 sm:p-6">
-      <PageHelp id="today" />
       {mostRecentDraft && (
         <section>
           <Link
@@ -271,6 +270,8 @@ export default async function DashboardPage() {
           </ul>
         </section>
       )}
+
+      <PageHelp id="today" />
     </div>
   );
 }

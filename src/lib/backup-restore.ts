@@ -416,6 +416,7 @@ async function execute(db: Db, userId: string, plan: Plan, mode: RestoreMode) {
         summary: readStr(rec.summary),
         order: readNum(rec.order) ?? 0,
         archived: rec.archived === true,
+        gap: rec.gap === true,
         createdAt: readDate(rec.createdAt),
       })),
     })
@@ -432,6 +433,7 @@ async function execute(db: Db, userId: string, plan: Plan, mode: RestoreMode) {
         turn: readStr(rec.turn),
         status: enumOf(rec.status, [...CARD_STATUSES], "idea"),
         parked: rec.parked === true,
+        gap: rec.gap === true,
         colorTag: readStr(rec.colorTag),
         act: readStr(rec.act),
         location: readStr(rec.location),

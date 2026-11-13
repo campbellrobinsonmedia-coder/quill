@@ -66,6 +66,7 @@ export function CardEditor({
   const [status, setStatus] = useState(isCardStatus(card.status) ? card.status : "idea");
   const [moveTo, setMoveTo] = useState("");
   const [parked, setParked] = useState(card.parked);
+  const [gap, setGap] = useState(card.gap);
   const [colorTag, setColorTag] = useState(card.colorTag ?? "neutral");
   const [characterIds, setCharacterIds] = useState(new Set(card.characters.map((c) => c.id)));
 
@@ -89,6 +90,7 @@ export function CardEditor({
       turn: turn.trim() || null,
       status,
       parked,
+      gap,
       act: act || null,
       location: location || null,
       emotion: emotion || null,
@@ -224,7 +226,7 @@ export function CardEditor({
       className="fixed inset-x-0 bottom-0 top-12 z-50 flex flex-col bg-white shadow-xl sm:left-auto sm:w-[26rem] sm:border-l sm:border-neutral-200 dark:bg-neutral-950 sm:dark:border-neutral-800"
     >
       <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
-        <h2 className="text-sm font-medium">{card.parked ? "Scene card (set aside)" : `Scene card ${number}`}</h2>
+        <h2 className="text-sm font-medium">{card.gap ? "Gap to fill" : card.parked ? "Scene card (set aside)" : `Scene card ${number}`}</h2>
         <button
           type="button"
           onClick={onClose}
@@ -521,6 +523,17 @@ export function CardEditor({
             </div>
           </div>
         )}
+
+        <label className="flex cursor-pointer items-start gap-2 text-sm">
+          <input type="checkbox" checked={gap} onChange={(e) => setGap(e.target.checked)} className="mt-1" />
+          <span>
+            This is a gap to fill
+            <span className="block text-xs text-neutral-500">
+              A placeholder for a scene you still need to find. It&apos;s flagged and listed on the
+              board, and isn&apos;t counted as a scene until you untick it.
+            </span>
+          </span>
+        </label>
 
         <label className="flex cursor-pointer items-start gap-2 text-sm">
           <input

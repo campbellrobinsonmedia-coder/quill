@@ -65,8 +65,8 @@ export default async function SeasonBoardPage({
       orderBy: { episodeNumber: "asc" },
       include: {
         _count: { select: { outlineCards: true } },
-        outlineCards: { select: { id: true, status: true, linkedSceneId: true, beatId: true, parked: true } },
-        beats: { where: { seasonId: null, seriesId: null, archived: true }, select: { id: true } },
+        outlineCards: { select: { id: true, status: true, linkedSceneId: true, beatId: true, parked: true, gap: true } },
+        beats: { where: { seasonId: null, seriesId: null, OR: [{ archived: true }, { gap: true }] }, select: { id: true, archived: true, gap: true } },
         draft: { select: { wordCount: true, sceneNumbersLocked: true, content: true } },
       },
     }),
@@ -110,7 +110,8 @@ export default async function SeasonBoardPage({
         formatTemplate: ep.formatTemplate,
         pageTarget: ep.pageTarget,
         cards: ep.outlineCards,
-        archivedBeatIds: new Set(ep.beats.map((b) => b.id)),
+        archivedBeatIds: new Set(ep.beats.filter((b) => b.archived).map((b) => b.id)),
+        gapBeats: ep.beats.filter((b) => b.gap && !b.archived).length,
         draftContent: ep.draft ? (ep.draft.content as unknown as DraftContent) : null,
       }),
     ])
@@ -121,7 +122,6 @@ export default async function SeasonBoardPage({
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
-      <PageHelp id="season" />
       <div className="flex items-center gap-2 text-sm">
         <Link href={`/series/${id}`} className="text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100">
           ← {season.series.title}
@@ -171,11 +171,17 @@ export default async function SeasonBoardPage({
         </div>
       </div>
 
-      {totals.scenes > 0 && (
+      {(totals.scenes > 0 || totals.gaps > 0) && (
         <section
           aria-label="Season progress"
           className="space-y-2 rounded-md border border-neutral-200 p-3 text-sm dark:border-neutral-800"
         >
+          {totals.gaps > 0 && (
+            <p className="text-xs text-amber-800 dark:text-amber-300">
+              {`${totals.gaps} gap${totals.gaps === 1 ? "" : "s"} still to fill across the episodes' Plan boards.`}
+            </p>
+          )}
+          {totals.scenes > 0 && (<>
           <p>
             <span className="font-medium tabular-nums">{totals.written}</span>
             <span className="text-neutral-500">
@@ -199,6 +205,7 @@ export default async function SeasonBoardPage({
               </span>
             ))}
           </p>
+          </>)}
         </section>
       )}
 
@@ -285,6 +292,11 @@ export default async function SeasonBoardPage({
                     </p>
                   </div>
                 )}
+                {roll.gaps > 0 && (
+                  <p className="text-xs text-amber-800 dark:text-amber-300">
+                    {`${roll.gaps} gap${roll.gaps === 1 ? "" : "s"} to fill`}
+                  </p>
+                )}
                 <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
                   {templateLabel(ep.formatTemplate)}
                 </p>
@@ -331,6 +343,8 @@ export default async function SeasonBoardPage({
           </ul>
         )}
       </section>
+
+      <PageHelp id="season" />
     </div>
   );
 }

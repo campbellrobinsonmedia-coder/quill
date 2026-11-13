@@ -43,6 +43,7 @@ export const HELP: HelpSection[] = [
       "Progress: the strip under the toolbar reads your script and counts how many scenes are idea, started or written, and the page total against your page target (set in Settings).",
       "Scenes in the script: \"Start this scene in the script\" creates the heading and links it to the card. \"Update from scene\" pulls the location and speaking characters back into the card.",
       "Set aside: a scene you're not feeling, or want to test, can be set aside. It stays in place, greyed out and struck through, and drops out of the numbering, progress and printouts. Click \"Bring back\" to restore it. Nothing is deleted.",
+      "Gaps: for something you know is missing but can't write yet. Type a scene under \"+ Scene\" and press \"+ Gap\" (or tick \"This is a gap to fill\" on a card, or use \"Mark as a gap\" in a beat's ⋯ menu). Gaps are flagged, listed in \"gaps still to fill\" above the board, can be highlighted, and aren't counted as scenes. \"Mark filled\" turns a gap into a normal scene. The outline printout ends with a \"Still to fill\" list.",
       "Archive vs delete a beat: archiving puts the beat away with its scenes (they leave the board, counts and printouts) and you can restore it from \"Archived beats\" below the board. Deleting removes the beat for good and moves its scenes to Unplanned.",
       "Print: index cards (3×5, four to a sheet) or a one-page outline, both without set-aside scenes.",
       "In a series episode: \"Move to another episode\" in the card panel sends a card to a different episode of the series, and \"From the season arc\" lists the season beats assigned to this episode.",
@@ -139,7 +140,7 @@ export const HELP: HelpSection[] = [
     intro: "One season: its arc, its episodes and how far along they are.",
     points: [
       "Season arc: beats for the season. Assign each to an episode; the coverage chip shows how much of it is written there. Arc templates add a ready-made shape.",
-      "Progress rolls up every episode's scenes (leaving out set-aside scenes and archived beats).",
+      "Progress rolls up every episode's scenes (leaving out set-aside scenes, gaps and archived beats), and the number of gaps still to fill is shown for the season and for each episode.",
       "Print index cards or outlines for the whole season, or export a pitch of the arc and episodes.",
       "Storylines & characters shows who and what appears in which episode.",
     ],

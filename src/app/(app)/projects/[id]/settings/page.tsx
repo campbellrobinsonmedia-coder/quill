@@ -16,7 +16,6 @@ export default async function ProjectSettingsPage({
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
-      <PageHelp id="project-settings" />
       <ProjectSettingsForm
         projectId={id}
         isEpisode={Boolean(project.seasonId)}
@@ -34,6 +33,8 @@ export default async function ProjectSettingsPage({
           pageTarget: project.pageTarget,
         }}
       />
+
+      <PageHelp id="project-settings" />
     </div>
   );
 }
